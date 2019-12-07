@@ -135,195 +135,7 @@ resource "azurerm_lb_backend_address_pool" "ingress-lb" {
   loadbalancer_id     = azurerm_lb.ingress-lb.id
 }
 
-# Bootstrap
-
-# https://www.terraform.io/docs/providers/azurerm/r/network_security_group.html
-resource "azurerm_network_security_group" "bootstrap" {
-  name = "openshift-${var.cluster_name}-bootstrap"
-  resource_group_name = azurerm_resource_group.main.name
-  location = var.cluster_location
-
-  security_rule {
-    name = "openshift-${var.cluster_name}-bootstrap-ssh"
-    resource_group_name = azurerm_resource_group.main.name
-    description = "SSH traffic from external"
-    protocol = "Tcp"
-    source_port_range = "22"
-    destination_port_range = "22"
-    source_address_prefix = "*"
-    access = "Allow"
-    priority = "100"
-    direction = "Inbound"
-  }
-
-  security_rule {
-    name = "openshift-${var.cluster_name}-bootstrap-etcd"
-    resource_group_name = azurerm_resource_group.main.name
-    description = "Etcd traffic from master hosts"
-    protocol = "Tcp"
-    source_port_range = "2379-2380"
-    destination_port_range = "2379-2380"
-    source_application_security_group_ids = [
-      azurerm_network_security_group.master.id
-    ]
-    access = "Allow"
-    priority = "101"
-    direction = "Inbound"
-  }
-
-  security_rule {
-    name = "openshift-${var.cluster_name}-bootstrap-api"
-    resource_group_name = azurerm_resource_group.main.name
-    description = "Api traffic from master hosts and load balancer"
-    protocol = "Tcp"
-    source_port_range = "6443"
-    destination_port_range = "6443"
-    source_application_security_group_ids = [
-      azurerm_network_security_group.master.id,
-      azurerm_network_security_group.api-lb.id
-    ]
-    access = "Allow"
-    priority = "102"
-    direction = "Inbound"
-  }
-
-  security_rule {
-    name = "openshift-${var.cluster_name}-bootstrap-host-services-tcp"
-    resource_group_name = azurerm_resource_group.main.name
-    description = "Host services traffic from master hosts"
-    protocol = "Tcp"
-    source_port_range = "9000-9999"
-    destination_port_range = "9000-9999"
-    source_application_security_group_ids = [
-      azurerm_network_security_group.master.id
-    ]
-    access = "Allow"
-    priority = "103"
-    direction = "Inbound"
-  }
-
-  security_rule {
-    name = "openshift-${var.cluster_name}-bootstrap-kubernetes"
-    resource_group_name = azurerm_resource_group.main.name
-    description = "Kubernetes traffic from master hosts"
-    protocol = "Tcp"
-    source_port_range = "10249-10259"
-    destination_port_range = "10249-10259"
-    source_application_security_group_ids = [
-      azurerm_network_security_group.master.id
-    ]
-    access = "Allow"
-    priority = "104"
-    direction = "Inbound"
-  }
-
-  security_rule {
-    name = "openshift-${var.cluster_name}-bootstrap-vxlan-geneve-1"
-    resource_group_name = azurerm_resource_group.main.name
-    description = "SDN traffic from master hosts"
-    protocol = "Udp"
-    source_port_range = "4789"
-    destination_port_range = "4789"
-    source_application_security_group_ids = [
-      azurerm_network_security_group.master.id
-    ]
-    access = "Allow"
-    priority = "105"
-    direction = "Inbound"
-  }
-
-  security_rule {
-    name = "openshift-${var.cluster_name}-bootstrap-vxlan-geneve-2"
-    resource_group_name = azurerm_resource_group.main.name
-    description = "SDN traffic from master hosts"
-    protocol = "Udp"
-    source_port_range = "6081"
-    destination_port_range = "6081"
-    source_application_security_group_ids = [
-      azurerm_network_security_group.master.id
-    ]
-    access = "Allow"
-    priority = "106"
-    direction = "Inbound"
-  }
-
-  security_rule {
-    name = "openshift-${var.cluster_name}-bootstrap-host-services-udp"
-    resource_group_name = azurerm_resource_group.main.name
-    description = "Host services traffic from master hosts"
-    protocol = "Udp"
-    source_port_range = "9000-9999"
-    destination_port_range = "9000-9999"
-    source_application_security_group_ids = [
-      azurerm_network_security_group.master.id
-    ]
-    access = "Allow"
-    priority = "107"
-    direction = "Inbound"
-  }
-
-  security_rule {
-    name = "openshift-${var.cluster_name}-bootstrap-machine-config"
-    resource_group_name = azurerm_resource_group.main.name
-    description = "MachineConfig from load balancer"
-    protocol = "Tcp"
-    source_port_range = "22623"
-    destination_port_range = "22623"
-    source_application_security_group_ids = [
-      azurerm_network_security_group.api-lb.id
-    ]
-    access = "Allow"
-    priority = "108"
-    direction = "Inbound"
-  }
-
-  tags = {
-  }
-}
-
-# https://www.terraform.io/docs/providers/azurerm/r/network_interface.html
-resource "azurerm_network_interface" "bootstrap" {
-  name = "openshift-${var.cluster_name}-bootstrap-nic"
-  resource_group_name = azurerm_resource_group.main.name
-  location = var.cluster_location
-  network_security_group_id = azurerm_network_security_group.bootstrap.id
-  ip_configuration {
-    name = "openshift-${var.cluster_name}-bootstrap-nic-config"
-    subnet_id = data.azurerm_subnet.cluster.id
-    private_ip_address_allocation = "Dynamic"
-  }
-}
-
-# https://www.terraform.io/docs/providers/azurerm/r/network_interface_backend_address_pool_association.html
-resource "azurerm_network_interface_backend_address_pool_association" "bootstrap" {
-  network_interface_id    = azurerm_network_interface.bootstrap.id
-  ip_configuration_name   = "openshift-${var.cluster_name}-bootstrap-nic-config"
-  backend_address_pool_id = azurerm_lb_backend_address_pool.api-lb.id
-}
-
-# https://www.terraform.io/docs/providers/azurerm/r/virtual_machine.html
-resource "azurerm_virtual_machine" "bootstrap" {
-  name = "openshift-${var.cluster_name}-bootstrap"
-  resource_group_name = azurerm_resource_group.main.name
-  location = var.cluster_location
-  network_interface_ids = [
-    azurerm_network_interface.bootstrap.id
-  ]
-  vm_size = var.bootstrap_vm_size
-  delete_os_disk_on_termination = true
-  delete_data_disks_on_termination = true
-  identity {
-    type = "UserAssigned "
-    identity_ids = []
-  }
-}
-
-
-
-
-
-
-
+# Master
 
 # https://www.terraform.io/docs/providers/azurerm/r/network_security_group.html
 resource "azurerm_network_security_group" "master" {
@@ -332,15 +144,16 @@ resource "azurerm_network_security_group" "master" {
   location = var.cluster_location
 
   security_rule {
-    name = "openshift-${var.cluster_name}-master-etcd"
+    name = "openshift-${var.cluster_name}-master-sdn"
     resource_group_name = azurerm_resource_group.main.name
-    description = "Etcd traffic from bootstrap/master hosts"
-    protocol = "Tcp"
-    source_port_range = "2379-2380"
-    destination_port_range = "2379-2380"
+    description = "SDN traffic"
+    protocol = "Udp"
+    source_port_range = "4789"
+    destination_port_range = "4789"
     source_application_security_group_ids = [
-      azurerm_network_security_group.bootstrap.id,
-      azurerm_network_security_group.master.id
+      azurerm_network_security_group.master.id,
+      azurerm_network_security_group.infra.id,
+      azurerm_network_security_group.worker.id
     ]
     access = "Allow"
     priority = "101"
@@ -348,17 +161,16 @@ resource "azurerm_network_security_group" "master" {
   }
 
   security_rule {
-    name = "openshift-${var.cluster_name}-master-api"
+    name = "openshift-${var.cluster_name}-master-dns-tcp"
     resource_group_name = azurerm_resource_group.main.name
-    description = "Api traffic from cluster hosts and load balancer"
+    description = "DNS traffic"
     protocol = "Tcp"
-    source_port_range = "6443"
-    destination_port_range = "6443"
+    source_port_range = "8053"
+    destination_port_range = "8053"
     source_application_security_group_ids = [
-      azurerm_network_security_group.bootstrap.id,
       azurerm_network_security_group.master.id,
-      azurerm_network_security_group.worker.id,
-      azurerm_network_security_group.api-lb.id
+      azurerm_network_security_group.infra.id,
+      azurerm_network_security_group.worker.id
     ]
     access = "Allow"
     priority = "102"
@@ -366,15 +178,15 @@ resource "azurerm_network_security_group" "master" {
   }
 
   security_rule {
-    name = "openshift-${var.cluster_name}-master-host-services-tcp"
+    name = "openshift-${var.cluster_name}-master-dns-udp"
     resource_group_name = azurerm_resource_group.main.name
-    description = "Host services traffic from cluster hosts"
-    protocol = "Tcp"
-    source_port_range = "9000-9999"
-    destination_port_range = "9000-9999"
+    description = "DNS traffic"
+    protocol = "Udp"
+    source_port_range = "8053"
+    destination_port_range = "8053"
     source_application_security_group_ids = [
-      azurerm_network_security_group.bootstrap.id,
       azurerm_network_security_group.master.id,
+      azurerm_network_security_group.infra.id,
       azurerm_network_security_group.worker.id
     ]
     access = "Allow"
@@ -383,16 +195,16 @@ resource "azurerm_network_security_group" "master" {
   }
 
   security_rule {
-    name = "openshift-${var.cluster_name}-master-kubernetes"
+    name = "openshift-${var.cluster_name}-master-kubelet"
     resource_group_name = azurerm_resource_group.main.name
-    description = "Kubernetes traffic from cluster hosts"
+    description = "Kubelet traffic"
     protocol = "Tcp"
-    source_port_range = "10249-10259"
-    destination_port_range = "10249-10259"
+    source_port_range = "10250"
+    destination_port_range = "10250"
     source_application_security_group_ids = [
-      azurerm_network_security_group.bootstrap.id,
       azurerm_network_security_group.master.id,
-      azurerm_network_security_group.worker.id
+      azurerm_network_security_group.infra.id,
+      azurerm_network_security_group.worker.id,
     ]
     access = "Allow"
     priority = "104"
@@ -400,16 +212,17 @@ resource "azurerm_network_security_group" "master" {
   }
 
   security_rule {
-    name = "openshift-${var.cluster_name}-master-vxlan-geneve-1"
+    name = "openshift-${var.cluster_name}-master-api"
     resource_group_name = azurerm_resource_group.main.name
-    description = "SDN traffic from cluster hosts"
-    protocol = "Udp"
-    source_port_range = "4789"
-    destination_port_range = "4789"
+    description = "API traffic"
+    protocol = "Tcp"
+    source_port_range = "8443"
+    destination_port_range = "8443"
     source_application_security_group_ids = [
-      azurerm_network_security_group.bootstrap.id,
       azurerm_network_security_group.master.id,
-      azurerm_network_security_group.worker.id
+      azurerm_network_security_group.infra.id,
+      azurerm_network_security_group.worker.id,
+      azurerm_network_security_group.api-lb.id
     ]
     access = "Allow"
     priority = "105"
@@ -417,16 +230,14 @@ resource "azurerm_network_security_group" "master" {
   }
 
   security_rule {
-    name = "openshift-${var.cluster_name}-master-vxlan-geneve-2"
+    name = "openshift-${var.cluster_name}-master-etcd"
     resource_group_name = azurerm_resource_group.main.name
-    description = "SDN traffic from cluster hosts"
-    protocol = "Udp"
-    source_port_range = "6081"
-    destination_port_range = "6081"
+    description = "Etcd traffic"
+    protocol = "Tcp"
+    source_port_range = "2379-2380"
+    destination_port_range = "2379-2380"
     source_application_security_group_ids = [
-      azurerm_network_security_group.bootstrap.id,
-      azurerm_network_security_group.master.id,
-      azurerm_network_security_group.worker.id
+      azurerm_network_security_group.master.id
     ]
     access = "Allow"
     priority = "106"
@@ -434,16 +245,16 @@ resource "azurerm_network_security_group" "master" {
   }
 
   security_rule {
-    name = "openshift-${var.cluster_name}-master-host-services-udp"
+    name = "openshift-${var.cluster_name}-master-controller-service"
     resource_group_name = azurerm_resource_group.main.name
-    description = "Host services traffic from cluster hosts"
-    protocol = "Udp"
-    source_port_range = "9000-9999"
-    destination_port_range = "9000-9999"
+    description = "Controller service traffic"
+    protocol = "Tcp"
+    source_port_range = "8444"
+    destination_port_range = "8444"
     source_application_security_group_ids = [
-      azurerm_network_security_group.bootstrap.id,
       azurerm_network_security_group.master.id,
-      azurerm_network_security_group.worker.id
+      azurerm_network_security_group.infra.id,
+      azurerm_network_security_group.worker.id,
     ]
     access = "Allow"
     priority = "107"
@@ -451,37 +262,45 @@ resource "azurerm_network_security_group" "master" {
   }
 
   security_rule {
-    name = "openshift-${var.cluster_name}-master-node-port"
+    name = "openshift-${var.cluster_name}-master-ssh"
     resource_group_name = azurerm_resource_group.main.name
-    description = "NodePort traffic from cluster hosts"
-    protocol = "Udp"
-    source_port_range = "30000-32767"
-    destination_port_range = "30000-32767"
-    source_application_security_group_ids = [
-      azurerm_network_security_group.bootstrap.id,
-      azurerm_network_security_group.master.id,
-      azurerm_network_security_group.worker.id
-    ]
+    description = "SSH traffic"
+    protocol = "Tcp"
+    source_port_range = "22"
+    destination_port_range = "22"
+    source_address_prefix = "*"
     access = "Allow"
     priority = "108"
     direction = "Inbound"
   }
 
   security_rule {
-    name = "openshift-${var.cluster_name}-master-machine-config"
+    name = "openshift-${var.cluster_name}-master-prometheus-metrics"
     resource_group_name = azurerm_resource_group.main.name
-    description = "MachineConfig from load balancer"
+    description = "Prometheus metrics traffic"
     protocol = "Tcp"
-    source_port_range = "22623"
-    destination_port_range = "22623"
+    source_port_range = "9100"
+    destination_port_range = "9100"
     source_application_security_group_ids = [
-      azurerm_network_security_group.api-lb.id
+      azurerm_network_security_group.master.id,
+      azurerm_network_security_group.infra.id,
+      azurerm_network_security_group.worker.id
     ]
     access = "Allow"
     priority = "109"
     direction = "Inbound"
   }
 
+  tags = {
+  }
+}
+
+# https://www.terraform.io/docs/providers/azurerm/r/availability_set.html
+resource "azurerm_availability_set" "master" {
+  name                = "openshift-${var.cluster_name}-master"
+  resource_group_name = azurerm_resource_group.main.name
+  location = var.cluster_location
+  managed = true
   tags = {
   }
 }
@@ -508,21 +327,82 @@ resource "azurerm_network_interface_backend_address_pool_association" "master" {
   backend_address_pool_id = azurerm_lb_backend_address_pool.api-lb.id
 }
 
+# https://www.terraform.io/docs/providers/azurerm/r/managed_disk.html
+resource "azurerm_managed_disk" "master" {
+  count=3
+  name = "openshift-${var.cluster_name}-master-${count.index}-disk"
+  resource_group_name = azurerm_resource_group.main.name
+  location = var.cluster_location
+  storage_account_type = "Premium_LRS"
+  create_option = "FromImage"
+  image_reference_id = var.image_id
+  disk_size_gb = 200
+  tags = {
+
+  }
+}
+
+# https://www.terraform.io/docs/providers/azurerm/r/virtual_machine.html
+resource "azurerm_virtual_machine" "master" {
+  count = 3
+  name = "openshift-${var.cluster_name}-master-${count.index}"
+  resource_group_name = azurerm_resource_group.main.name
+  location = var.cluster_location
+  network_interface_ids = [
+    azurerm_network_interface.master.id
+  ]
+  os_profile_linux_config = {
+    disable_password_authentication = true
+    ssh_keys = {
+      key_data = file(var.sssh_key_path)
+      path = "/home/${var.admin_user}/.ssh/authorized_keys"
+    }
+  }
+  vm_size = var.master_vm_size
+  availability_set_id = azurerm_availability_set.master.id
+  delete_os_disk_on_termination = true
+  delete_data_disks_on_termination = true
+  identity {
+    type = "UserAssigned "
+    identity_ids = [
+      var.cluster_identity_id
+    ]
+  }
+
+  os_profile {
+    computer_name = "openshift-${var.cluster_name}-master-${count.index}"
+    admin_username = var.admin_user
+  }
+
+  storage_os_disk {
+    name = "openshift-${var.cluster_name}-master-${count.index}-disk"
+    create_option = "Attach"
+    caching = "ReadOnly"
+    managed_disk_id = element(azurerm_managed_disk.master.*.id, count.index)
+  }
+
+  tags {
+  }
+}
+
+# Infra
+
 # https://www.terraform.io/docs/providers/azurerm/r/network_security_group.html
-resource "azurerm_network_security_group" "worker" {
-  name = "openshift-${var.cluster_name}-worker"
+resource "azurerm_network_security_group" "infra" {
+  name = "openshift-${var.cluster_name}-infra"
   resource_group_name = azurerm_resource_group.main.name
   location = var.cluster_location
 
   security_rule {
-    name = "openshift-${var.cluster_name}-worker-host-services-tcp"
+    name = "openshift-${var.cluster_name}-infra-sdn"
     resource_group_name = azurerm_resource_group.main.name
-    description = "Host services traffic from cluster hosts"
-    protocol = "Tcp"
-    source_port_range = "9000-9999"
-    destination_port_range = "9000-9999"
+    description = "SDN traffic"
+    protocol = "Udp"
+    source_port_range = "4789"
+    destination_port_range = "4789"
     source_application_security_group_ids = [
       azurerm_network_security_group.master.id,
+      azurerm_network_security_group.infra.id,
       azurerm_network_security_group.worker.id
     ]
     access = "Allow"
@@ -531,15 +411,16 @@ resource "azurerm_network_security_group" "worker" {
   }
 
   security_rule {
-    name = "openshift-${var.cluster_name}-worker-kubernetes"
+    name = "openshift-${var.cluster_name}-infra-kubelet"
     resource_group_name = azurerm_resource_group.main.name
-    description = "Kubernetes traffic from cluster hosts"
+    description = "Kubelet traffic"
     protocol = "Tcp"
-    source_port_range = "10249-10259"
-    destination_port_range = "10249-10259"
+    source_port_range = "10250"
+    destination_port_range = "10250"
     source_application_security_group_ids = [
       azurerm_network_security_group.master.id,
-      azurerm_network_security_group.worker.id
+      azurerm_network_security_group.infra.id,
+      azurerm_network_security_group.worker.id,
     ]
     access = "Allow"
     priority = "102"
@@ -547,31 +428,27 @@ resource "azurerm_network_security_group" "worker" {
   }
 
   security_rule {
-    name = "openshift-${var.cluster_name}-worker-vxlan-geneve-1"
+    name = "openshift-${var.cluster_name}-infra-ssh"
     resource_group_name = azurerm_resource_group.main.name
-    description = "SDN traffic from cluster hosts"
-    protocol = "Udp"
-    source_port_range = "4789"
-    destination_port_range = "4789"
-    source_application_security_group_ids = [
-      azurerm_network_security_group.master.id,
-      azurerm_network_security_group.worker.id
-    ]
+    description = "SSH traffic"
+    protocol = "Tcp"
+    source_port_range = "22"
+    destination_port_range = "22"
+    source_address_prefix = "*"
     access = "Allow"
     priority = "103"
     direction = "Inbound"
   }
 
   security_rule {
-    name = "openshift-${var.cluster_name}-worker-vxlan-geneve-2"
+    name = "openshift-${var.cluster_name}-infra-haproxy-stats"
     resource_group_name = azurerm_resource_group.main.name
-    description = "SDN traffic from cluster hosts"
-    protocol = "Udp"
-    source_port_range = "6081"
-    destination_port_range = "6081"
+    description = "Kubelet traffic"
+    protocol = "Tcp"
+    source_port_range = "1936"
+    destination_port_range = "1936"
     source_application_security_group_ids = [
-      azurerm_network_security_group.master.id,
-      azurerm_network_security_group.worker.id
+      azurerm_network_security_group.ingress-lb.id
     ]
     access = "Allow"
     priority = "104"
@@ -579,15 +456,14 @@ resource "azurerm_network_security_group" "worker" {
   }
 
   security_rule {
-    name = "openshift-${var.cluster_name}-worker-host-services-udp"
+    name = "openshift-${var.cluster_name}-infra-elasticsearch-api"
     resource_group_name = azurerm_resource_group.main.name
-    description = "Host services traffic from cluster hosts"
-    protocol = "Udp"
-    source_port_range = "9000-9999"
-    destination_port_range = "9000-9999"
+    description = "Elasticsearch api traffic"
+    protocol = "Tcp"
+    source_port_range = "9200"
+    destination_port_range = "9200"
     source_application_security_group_ids = [
-      azurerm_network_security_group.master.id,
-      azurerm_network_security_group.worker.id
+      azurerm_network_security_group.infra.id
     ]
     access = "Allow"
     priority = "105"
@@ -595,15 +471,14 @@ resource "azurerm_network_security_group" "worker" {
   }
 
   security_rule {
-    name = "openshift-${var.cluster_name}-worker-node-port"
+    name = "openshift-${var.cluster_name}-infra-elasticsearch-cluster"
     resource_group_name = azurerm_resource_group.main.name
-    description = "NodePort traffic from cluster hosts"
-    protocol = "Udp"
-    source_port_range = "30000-32767"
-    destination_port_range = "30000-32767"
+    description = "Elasticsearch cluster traffic"
+    protocol = "Tcp"
+    source_port_range = "9300"
+    destination_port_range = "9300"
     source_application_security_group_ids = [
-      azurerm_network_security_group.master.id,
-      azurerm_network_security_group.worker.id
+      azurerm_network_security_group.infra.id
     ]
     access = "Allow"
     priority = "106"
@@ -611,14 +486,14 @@ resource "azurerm_network_security_group" "worker" {
   }
 
   security_rule {
-    name = "openshift-${var.cluster_name}-master-ingress-http"
+    name = "openshift-${var.cluster_name}-infra-prometheus-api"
     resource_group_name = azurerm_resource_group.main.name
-    description = "Ingress http from load balancer"
+    description = "Prometheus api traffic"
     protocol = "Tcp"
-    source_port_range = "80"
-    destination_port_range = "80"
+    source_port_range = "9090"
+    destination_port_range = "9090"
     source_application_security_group_ids = [
-      azurerm_network_security_group.ingress-lb.id
+      azurerm_network_security_group.infra.id
     ]
     access = "Allow"
     priority = "107"
@@ -626,9 +501,41 @@ resource "azurerm_network_security_group" "worker" {
   }
 
   security_rule {
-    name = "openshift-${var.cluster_name}-master-ingress-https"
+    name = "openshift-${var.cluster_name}-infra-prometheus-metrics"
     resource_group_name = azurerm_resource_group.main.name
-    description = "Ingress http from load balancer"
+    description = "Prometheus metrics traffic"
+    protocol = "Tcp"
+    source_port_range = "9100"
+    destination_port_range = "9100"
+    source_application_security_group_ids = [
+      azurerm_network_security_group.master.id,
+      azurerm_network_security_group.infra.id,
+      azurerm_network_security_group.worker.id
+    ]
+    access = "Allow"
+    priority = "108"
+    direction = "Inbound"
+  }
+
+  security_rule {
+    name = "openshift-${var.cluster_name}-infra-ingress-http"
+    resource_group_name = azurerm_resource_group.main.name
+    description = "Prometheus metrics traffic"
+    protocol = "Tcp"
+    source_port_range = "80"
+    destination_port_range = "80"
+    source_application_security_group_ids = [
+      azurerm_network_security_group.ingress-lb.id
+    ]
+    access = "Allow"
+    priority = "109"
+    direction = "Inbound"
+  }
+
+  security_rule {
+    name = "openshift-${var.cluster_name}-infra-ingress-https"
+    resource_group_name = azurerm_resource_group.main.name
+    description = "Prometheus metrics traffic"
     protocol = "Tcp"
     source_port_range = "443"
     destination_port_range = "443"
@@ -636,7 +543,171 @@ resource "azurerm_network_security_group" "worker" {
       azurerm_network_security_group.ingress-lb.id
     ]
     access = "Allow"
-    priority = "108"
+    priority = "110"
+    direction = "Inbound"
+  }
+}
+
+# https://www.terraform.io/docs/providers/azurerm/r/availability_set.html
+resource "azurerm_availability_set" "infra" {
+  name                = "openshift-${var.cluster_name}-infra"
+  resource_group_name = azurerm_resource_group.main.name
+  location = var.cluster_location
+  managed = true
+  tags = {
+  }
+}
+
+# https://www.terraform.io/docs/providers/azurerm/r/network_interface.html
+resource "azurerm_network_interface" "infra" {
+  count = 3
+  name = "openshift-${var.cluster_name}-infra-nic-${count.index}"
+  resource_group_name = azurerm_resource_group.main.name
+  location = var.cluster_location
+  network_security_group_id = azurerm_network_security_group.infra.id
+  ip_configuration {
+    name = "openshift-${var.cluster_name}-infra-nic-config"
+    subnet_id = data.azurerm_subnet.cluster.id
+    private_ip_address_allocation = "Dynamic"
+  }
+}
+
+# https://www.terraform.io/docs/providers/azurerm/r/network_interface_backend_address_pool_association.html
+resource "azurerm_network_interface_backend_address_pool_association" "infra" {
+  count = 3
+  network_interface_id    = element(azurerm_network_interface.infra.*.id, count.index)
+  ip_configuration_name   = "openshift-${var.cluster_name}-infra-nic-config"
+  backend_address_pool_id = azurerm_lb_backend_address_pool.ingress-lb.id
+}
+
+# https://www.terraform.io/docs/providers/azurerm/r/managed_disk.html
+resource "azurerm_managed_disk" "infra" {
+  count=3
+  name = "openshift-${var.cluster_name}-infra-${count.index}-disk"
+  resource_group_name = azurerm_resource_group.main.name
+  location = var.cluster_location
+  storage_account_type = "Premium_LRS"
+  create_option = "FromImage"
+  image_reference_id = var.image_id
+  disk_size_gb = 200
+  tags = {
+
+  }
+}
+
+# https://www.terraform.io/docs/providers/azurerm/r/virtual_machine.html
+resource "azurerm_virtual_machine" "infra" {
+  count = 3
+  name = "openshift-${var.cluster_name}-infra-${count.index}"
+  resource_group_name = azurerm_resource_group.main.name
+  location = var.cluster_location
+  network_interface_ids = [
+    azurerm_network_interface.master.id
+  ]
+  os_profile_linux_config = {
+    disable_password_authentication = true
+    ssh_keys = {
+      key_data = file(var.sssh_key_path)
+      path = "/home/${var.admin_user}/.ssh/authorized_keys"
+    }
+  }
+  vm_size = var.infra_vm_size
+  availability_set_id = azurerm_availability_set.master.id
+  delete_os_disk_on_termination = true
+  delete_data_disks_on_termination = true
+  identity {
+    type = "UserAssigned "
+    identity_ids = [
+      var.cluster_identity_id
+    ]
+  }
+
+  os_profile {
+    computer_name = "openshift-${var.cluster_name}-infra-${count.index}"
+    admin_username = var.admin_user
+  }
+
+  storage_os_disk {
+    name = "openshift-${var.cluster_name}-infra-${count.index}-disk"
+    create_option = "Attach"
+    caching = "ReadOnly"
+    managed_disk_id = element(azurerm_managed_disk.infra.*.id, count.index)
+  }
+
+  tags {
+  }
+}
+
+
+# Worker
+
+# https://www.terraform.io/docs/providers/azurerm/r/network_security_group.html
+resource "azurerm_network_security_group" "worker" {
+  name = "openshift-${var.cluster_name}-worker"
+  resource_group_name = azurerm_resource_group.main.name
+  location = var.cluster_location
+
+  security_rule {
+    name = "openshift-${var.cluster_name}-worker-sdn"
+    resource_group_name = azurerm_resource_group.main.name
+    description = "SDN traffic"
+    protocol = "Udp"
+    source_port_range = "4789"
+    destination_port_range = "4789"
+    source_application_security_group_ids = [
+      azurerm_network_security_group.master.id,
+      azurerm_network_security_group.infra.id,
+      azurerm_network_security_group.worker.id
+    ]
+    access = "Allow"
+    priority = "101"
+    direction = "Inbound"
+  }
+
+  security_rule {
+    name = "openshift-${var.cluster_name}-worker-kubelet"
+    resource_group_name = azurerm_resource_group.main.name
+    description = "Kubelet traffic"
+    protocol = "Tcp"
+    source_port_range = "10250"
+    destination_port_range = "10250"
+    source_application_security_group_ids = [
+      azurerm_network_security_group.master.id,
+      azurerm_network_security_group.infra.id,
+      azurerm_network_security_group.worker.id,
+    ]
+    access = "Allow"
+    priority = "102"
+    direction = "Inbound"
+  }
+
+  security_rule {
+    name = "openshift-${var.cluster_name}-worker-ssh"
+    resource_group_name = azurerm_resource_group.main.name
+    description = "SSH traffic"
+    protocol = "Tcp"
+    source_port_range = "22"
+    destination_port_range = "22"
+    source_address_prefix = "*"
+    access = "Allow"
+    priority = "103"
+    direction = "Inbound"
+  }
+
+  security_rule {
+    name = "openshift-${var.cluster_name}-worker-prometheus-metrics"
+    resource_group_name = azurerm_resource_group.main.name
+    description = "Prometheus metrics traffic"
+    protocol = "Tcp"
+    source_port_range = "9100"
+    destination_port_range = "9100"
+    source_application_security_group_ids = [
+      azurerm_network_security_group.master.id,
+      azurerm_network_security_group.infra.id,
+      azurerm_network_security_group.worker.id
+    ]
+    access = "Allow"
+    priority = "104"
     direction = "Inbound"
   }
 
@@ -644,4 +715,84 @@ resource "azurerm_network_security_group" "worker" {
   }
 }
 
+# https://www.terraform.io/docs/providers/azurerm/r/availability_set.html
+resource "azurerm_availability_set" "worker" {
+  name                = "openshift-${var.cluster_name}-worker"
+  resource_group_name = azurerm_resource_group.main.name
+  location = var.cluster_location
+  managed = true
+  tags = {
+  }
+}
 
+# https://www.terraform.io/docs/providers/azurerm/r/network_interface.html
+resource "azurerm_network_interface" "worker" {
+  count = 3
+  name = "openshift-${var.cluster_name}-worker-nic-${count.index}"
+  resource_group_name = azurerm_resource_group.main.name
+  location = var.cluster_location
+  network_security_group_id = azurerm_network_security_group.worker.id
+  ip_configuration {
+    name = "openshift-${var.cluster_name}-worker-nic-config"
+    subnet_id = data.azurerm_subnet.cluster.id
+    private_ip_address_allocation = "Dynamic"
+  }
+}
+
+# https://www.terraform.io/docs/providers/azurerm/r/managed_disk.html
+resource "azurerm_managed_disk" "worker" {
+  count=3
+  name = "openshift-${var.cluster_name}-worker-${count.index}-disk"
+  resource_group_name = azurerm_resource_group.main.name
+  location = var.cluster_location
+  storage_account_type = "Premium_LRS"
+  create_option = "FromImage"
+  image_reference_id = var.image_id
+  disk_size_gb = 200
+  tags = {
+
+  }
+}
+
+# https://www.terraform.io/docs/providers/azurerm/r/virtual_machine.html
+resource "azurerm_virtual_machine" "worker" {
+  count = 3
+  name = "openshift-${var.cluster_name}-worker-${count.index}"
+  resource_group_name = azurerm_resource_group.main.name
+  location = var.cluster_location
+  network_interface_ids = [
+    azurerm_network_interface.worker.id
+  ]
+  os_profile_linux_config = {
+    disable_password_authentication = true
+    ssh_keys = {
+      key_data = file(var.sssh_key_path)
+      path = "/home/${var.admin_user}/.ssh/authorized_keys"
+    }
+  }
+  vm_size = var.infra_vm_size
+  availability_set_id = azurerm_availability_set.worker.id
+  delete_os_disk_on_termination = true
+  delete_data_disks_on_termination = true
+  identity {
+    type = "UserAssigned "
+    identity_ids = [
+      var.cluster_identity_id
+    ]
+  }
+
+  os_profile {
+    computer_name = "openshift-${var.cluster_name}-worker-${count.index}"
+    admin_username = var.admin_user
+  }
+
+  storage_os_disk {
+    name = "openshift-${var.cluster_name}-worker-${count.index}-disk"
+    create_option = "Attach"
+    caching = "ReadOnly"
+    managed_disk_id = element(azurerm_managed_disk.worker.*.id, count.index)
+  }
+
+  tags {
+  }
+}
