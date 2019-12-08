@@ -5,8 +5,11 @@ variable "cluster_subnet_name" {}
 variable "cluster_network_name" {}
 variable "cluster_identity_id" {}
 variable "master_vm_size" {}
+variable "master_vm_count" {}
 variable "infra_vm_size" {}
+variable "infra_vm_count" {}
 variable "worker_vm_size" {}
+variable "worker_vm_count" {}
 variable "admin_user" {}
 variable "image_id" {
   default = "RedHat:RHEL:7.7:7.7.2019090316"

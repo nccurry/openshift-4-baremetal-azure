@@ -29,27 +29,11 @@ resource "azurerm_network_security_group" "api-lb" {
     resource_group_name = azurerm_resource_group.main.name
     description = "API traffic from external"
     protocol = "Tcp"
-    source_port_range = "6443"
-    destination_port_range = "6443"
+    source_port_range = "8443"
+    destination_port_range = "8443"
     source_address_prefix = "*"
     access = "Allow"
     priority = "101"
-    direction = "Inbound"
-  }
-
-  security_rule {
-    name = "openshift-${var.cluster_name}-api-lb-machine-config"
-    resource_group_name = azurerm_resource_group.main.name
-    description = "MachineConfig traffic from bootstrap / master"
-    protocol = "Tcp"
-    source_port_range = "22623"
-    destination_port_range = "22623"
-    source_application_security_group_ids = [
-      azurerm_network_security_group.bootstrap.id,
-      azurerm_network_security_group.master.id
-    ]
-    access = "Allow"
-    priority = "102"
     direction = "Inbound"
   }
 
@@ -62,6 +46,7 @@ resource "azurerm_lb" "api-lb" {
   name = "openshift-${var.cluster_name}-api-lb"
   resource_group_name = azurerm_resource_group.main.name
   location = var.cluster_location
+
   frontend_ip_configuration {
     name = "openshift-${var.cluster_name}-api-lb-config"
     subnet_id = data.azurerm_subnet.cluster.id
@@ -76,6 +61,29 @@ resource "azurerm_lb_backend_address_pool" "api-lb" {
   name = "openshift-${var.cluster_name}-api-lb"
   resource_group_name = azurerm_resource_group.main.name
   loadbalancer_id     = azurerm_lb.api-lb.id
+}
+
+# https://www.terraform.io/docs/providers/azurerm/r/loadbalancer_rule.html
+resource "azurerm_lb_rule" "api-lb-https" {
+  name = "openshift-${var.cluster_name}-api-lb-https"
+  resource_group_name = azurerm_resource_group.main.name
+  loadbalancer_id = azurerm_lb.api-lb.id
+  frontend_ip_configuration_name = "openshift-${var.cluster_name}-api-lb-config"
+  protocol = "Tcp"
+  frontend_port = "8443"
+  backend_port = "8443"
+  backend_address_pool_id = azurerm_lb_backend_address_pool.api-lb.id
+  probe_id = azurerm_lb_probe.api-lb-https.id
+}
+
+# https://www.terraform.io/docs/providers/azurerm/r/loadbalancer_probe.html
+resource "azurerm_lb_probe" "api-lb-https" {
+  name = "openshift-${var.cluster_name}-api-lb-https"
+  resource_group_name = azurerm_resource_group.main.name
+  loadbalancer_id = azurerm_lb.api-lb.id
+  protocol = "Https"
+  port = "8443"
+  request_path = "/healthz"
 }
 
 # https://www.terraform.io/docs/providers/azurerm/r/network_security_group.html
@@ -110,6 +118,19 @@ resource "azurerm_network_security_group" "ingress-lb" {
     direction = "Inbound"
   }
 
+  security_rule {
+    name = "openshift-${var.cluster_name}-ingress-lb-haproxy-stats"
+    resource_group_name = azurerm_resource_group.main.name
+    description = "Ingress http from external"
+    protocol = "Tcp"
+    source_port_range = "1936"
+    destination_port_range = "1936"
+    source_address_prefix = "*"
+    access = "Allow"
+    priority = "103"
+    direction = "Inbound"
+  }
+
   tags = {
   }
 }
@@ -133,6 +154,64 @@ resource "azurerm_lb_backend_address_pool" "ingress-lb" {
   name = "openshift-${var.cluster_name}-ingress-lb"
   resource_group_name = azurerm_resource_group.main.name
   loadbalancer_id     = azurerm_lb.ingress-lb.id
+}
+
+# https://www.terraform.io/docs/providers/azurerm/r/loadbalancer_rule.html
+resource "azurerm_lb_rule" "ingress-lb-https" {
+  name = "openshift-${var.cluster_name}-ingress-lb-https"
+  resource_group_name = azurerm_resource_group.main.name
+  loadbalancer_id = azurerm_lb.ingress-lb.id
+  frontend_ip_configuration_name = "openshift-${var.cluster_name}-ingress-lb-config"
+  protocol = "Tcp"
+  frontend_port = "443"
+  backend_port = "443"
+  backend_address_pool_id = azurerm_lb_backend_address_pool.ingress-lb.id
+  probe_id = azurerm_lb_probe.ingress-lb-haproxy-health.id
+}
+
+# https://www.terraform.io/docs/providers/azurerm/r/loadbalancer_rule.html
+resource "azurerm_lb_rule" "ingress-lb-http" {
+  name = "openshift-${var.cluster_name}-ingress-lb-http"
+  resource_group_name = azurerm_resource_group.main.name
+  loadbalancer_id = azurerm_lb.ingress-lb.id
+  frontend_ip_configuration_name = "openshift-${var.cluster_name}-ingress-lb-config"
+  protocol = "Tcp"
+  frontend_port = "80"
+  backend_port = "80"
+  backend_address_pool_id = azurerm_lb_backend_address_pool.ingress-lb.id
+  probe_id = azurerm_lb_probe.ingress-lb-haproxy-health.id
+}
+
+# https://www.terraform.io/docs/providers/azurerm/r/loadbalancer_probe.html
+resource "azurerm_lb_probe" "ingress-lb-haproxy-health" {
+  name = "openshift-${var.cluster_name}-ingress-lb-haproxy-health"
+  resource_group_name = azurerm_resource_group.main.name
+  loadbalancer_id = azurerm_lb.ingress-lb.id
+  protocol = "Http"
+  port = "1936"
+  request_path = "/healthz"
+}
+
+# https://www.terraform.io/docs/providers/azurerm/r/loadbalancer_rule.html
+resource "azurerm_lb_rule" "ingress-lb-haproxy-stats" {
+  name = "openshift-${var.cluster_name}-ingress-lb-haproxy-stats"
+  resource_group_name = azurerm_resource_group.main.name
+  loadbalancer_id = azurerm_lb.ingress-lb.id
+  frontend_ip_configuration_name = "openshift-${var.cluster_name}-ingress-lb-config"
+  protocol = "Tcp"
+  frontend_port = "1936"
+  backend_port = "1936"
+  backend_address_pool_id = azurerm_lb_backend_address_pool.ingress-lb.id
+  probe_id = azurerm_lb_probe.ingress-lb-haproxy-stats.id
+}
+
+# https://www.terraform.io/docs/providers/azurerm/r/loadbalancer_probe.html
+resource "azurerm_lb_probe" "ingress-lb-haproxy-stats" {
+  name = "openshift-${var.cluster_name}-ingress-lb-haproxy-stats"
+  resource_group_name = azurerm_resource_group.main.name
+  loadbalancer_id = azurerm_lb.ingress-lb.id
+  protocol = "Tcp"
+  port = "1936"
 }
 
 # Master
