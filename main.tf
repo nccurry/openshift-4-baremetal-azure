@@ -16,9 +16,13 @@ data azurerm_subnet "cluster" {
   resource_group_name = var.cluster_resource_group
 }
 
+data "azurerm_dns_zone" "cluster" {
+  name                = var.dns_zone_name
+  resource_group_name = azurerm_resource_group.main.name
+}
+
 # Load Balancers
 
-# https://www.terraform.io/docs/providers/azurerm/r/network_security_group.html
 resource "azurerm_network_security_group" "api-lb" {
   name = "openshift-${var.cluster_name}-api-lb"
   resource_group_name = azurerm_resource_group.main.name
@@ -41,7 +45,6 @@ resource "azurerm_network_security_group" "api-lb" {
   }
 }
 
-# https://www.terraform.io/docs/providers/azurerm/r/loadbalancer.html
 resource "azurerm_lb" "api-lb" {
   name = "openshift-${var.cluster_name}-api-lb"
   resource_group_name = azurerm_resource_group.main.name
@@ -56,14 +59,12 @@ resource "azurerm_lb" "api-lb" {
   }
 }
 
-# https://www.terraform.io/docs/providers/azurerm/r/loadbalancer_backend_address_pool.html
 resource "azurerm_lb_backend_address_pool" "api-lb" {
   name = "openshift-${var.cluster_name}-api-lb"
   resource_group_name = azurerm_resource_group.main.name
   loadbalancer_id     = azurerm_lb.api-lb.id
 }
 
-# https://www.terraform.io/docs/providers/azurerm/r/loadbalancer_rule.html
 resource "azurerm_lb_rule" "api-lb-https" {
   name = "openshift-${var.cluster_name}-api-lb-https"
   resource_group_name = azurerm_resource_group.main.name
@@ -76,7 +77,6 @@ resource "azurerm_lb_rule" "api-lb-https" {
   probe_id = azurerm_lb_probe.api-lb-https.id
 }
 
-# https://www.terraform.io/docs/providers/azurerm/r/loadbalancer_probe.html
 resource "azurerm_lb_probe" "api-lb-https" {
   name = "openshift-${var.cluster_name}-api-lb-https"
   resource_group_name = azurerm_resource_group.main.name
@@ -86,7 +86,6 @@ resource "azurerm_lb_probe" "api-lb-https" {
   request_path = "/healthz"
 }
 
-# https://www.terraform.io/docs/providers/azurerm/r/network_security_group.html
 resource "azurerm_network_security_group" "ingress-lb" {
   name = "openshift-${var.cluster_name}-ingress-lb"
   resource_group_name = azurerm_resource_group.main.name
@@ -135,7 +134,6 @@ resource "azurerm_network_security_group" "ingress-lb" {
   }
 }
 
-# https://www.terraform.io/docs/providers/azurerm/r/loadbalancer.html
 resource "azurerm_lb" "ingress-lb" {
   name = "openshift-${var.cluster_name}-ingress-lb"
   resource_group_name = azurerm_resource_group.main.name
@@ -149,14 +147,12 @@ resource "azurerm_lb" "ingress-lb" {
   }
 }
 
-# https://www.terraform.io/docs/providers/azurerm/r/loadbalancer_backend_address_pool.html
 resource "azurerm_lb_backend_address_pool" "ingress-lb" {
   name = "openshift-${var.cluster_name}-ingress-lb"
   resource_group_name = azurerm_resource_group.main.name
   loadbalancer_id     = azurerm_lb.ingress-lb.id
 }
 
-# https://www.terraform.io/docs/providers/azurerm/r/loadbalancer_rule.html
 resource "azurerm_lb_rule" "ingress-lb-https" {
   name = "openshift-${var.cluster_name}-ingress-lb-https"
   resource_group_name = azurerm_resource_group.main.name
@@ -169,7 +165,6 @@ resource "azurerm_lb_rule" "ingress-lb-https" {
   probe_id = azurerm_lb_probe.ingress-lb-haproxy-health.id
 }
 
-# https://www.terraform.io/docs/providers/azurerm/r/loadbalancer_rule.html
 resource "azurerm_lb_rule" "ingress-lb-http" {
   name = "openshift-${var.cluster_name}-ingress-lb-http"
   resource_group_name = azurerm_resource_group.main.name
@@ -182,7 +177,6 @@ resource "azurerm_lb_rule" "ingress-lb-http" {
   probe_id = azurerm_lb_probe.ingress-lb-haproxy-health.id
 }
 
-# https://www.terraform.io/docs/providers/azurerm/r/loadbalancer_probe.html
 resource "azurerm_lb_probe" "ingress-lb-haproxy-health" {
   name = "openshift-${var.cluster_name}-ingress-lb-haproxy-health"
   resource_group_name = azurerm_resource_group.main.name
@@ -192,7 +186,6 @@ resource "azurerm_lb_probe" "ingress-lb-haproxy-health" {
   request_path = "/healthz"
 }
 
-# https://www.terraform.io/docs/providers/azurerm/r/loadbalancer_rule.html
 resource "azurerm_lb_rule" "ingress-lb-haproxy-stats" {
   name = "openshift-${var.cluster_name}-ingress-lb-haproxy-stats"
   resource_group_name = azurerm_resource_group.main.name
@@ -205,7 +198,6 @@ resource "azurerm_lb_rule" "ingress-lb-haproxy-stats" {
   probe_id = azurerm_lb_probe.ingress-lb-haproxy-stats.id
 }
 
-# https://www.terraform.io/docs/providers/azurerm/r/loadbalancer_probe.html
 resource "azurerm_lb_probe" "ingress-lb-haproxy-stats" {
   name = "openshift-${var.cluster_name}-ingress-lb-haproxy-stats"
   resource_group_name = azurerm_resource_group.main.name
@@ -216,7 +208,6 @@ resource "azurerm_lb_probe" "ingress-lb-haproxy-stats" {
 
 # Master
 
-# https://www.terraform.io/docs/providers/azurerm/r/network_security_group.html
 resource "azurerm_network_security_group" "master" {
   name = "openshift-${var.cluster_name}-master"
   resource_group_name = azurerm_resource_group.main.name
@@ -374,7 +365,6 @@ resource "azurerm_network_security_group" "master" {
   }
 }
 
-# https://www.terraform.io/docs/providers/azurerm/r/availability_set.html
 resource "azurerm_availability_set" "master" {
   name                = "openshift-${var.cluster_name}-master"
   resource_group_name = azurerm_resource_group.main.name
@@ -384,7 +374,6 @@ resource "azurerm_availability_set" "master" {
   }
 }
 
-# https://www.terraform.io/docs/providers/azurerm/r/network_interface.html
 resource "azurerm_network_interface" "master" {
   count = 3
   name = "openshift-${var.cluster_name}-master-nic-${count.index}"
@@ -398,7 +387,6 @@ resource "azurerm_network_interface" "master" {
   }
 }
 
-# https://www.terraform.io/docs/providers/azurerm/r/network_interface_backend_address_pool_association.html
 resource "azurerm_network_interface_backend_address_pool_association" "master" {
   count = 3
   network_interface_id    = element(azurerm_network_interface.master.*.id, count.index)
@@ -406,7 +394,6 @@ resource "azurerm_network_interface_backend_address_pool_association" "master" {
   backend_address_pool_id = azurerm_lb_backend_address_pool.api-lb.id
 }
 
-# https://www.terraform.io/docs/providers/azurerm/r/managed_disk.html
 resource "azurerm_managed_disk" "master" {
   count=3
   name = "openshift-${var.cluster_name}-master-${count.index}-disk"
@@ -421,7 +408,6 @@ resource "azurerm_managed_disk" "master" {
   }
 }
 
-# https://www.terraform.io/docs/providers/azurerm/r/virtual_machine.html
 resource "azurerm_virtual_machine" "master" {
   count = 3
   name = "openshift-${var.cluster_name}-master-${count.index}"
@@ -466,7 +452,6 @@ resource "azurerm_virtual_machine" "master" {
 
 # Infra
 
-# https://www.terraform.io/docs/providers/azurerm/r/network_security_group.html
 resource "azurerm_network_security_group" "infra" {
   name = "openshift-${var.cluster_name}-infra"
   resource_group_name = azurerm_resource_group.main.name
@@ -627,7 +612,6 @@ resource "azurerm_network_security_group" "infra" {
   }
 }
 
-# https://www.terraform.io/docs/providers/azurerm/r/availability_set.html
 resource "azurerm_availability_set" "infra" {
   name                = "openshift-${var.cluster_name}-infra"
   resource_group_name = azurerm_resource_group.main.name
@@ -637,7 +621,6 @@ resource "azurerm_availability_set" "infra" {
   }
 }
 
-# https://www.terraform.io/docs/providers/azurerm/r/network_interface.html
 resource "azurerm_network_interface" "infra" {
   count = 3
   name = "openshift-${var.cluster_name}-infra-nic-${count.index}"
@@ -651,7 +634,6 @@ resource "azurerm_network_interface" "infra" {
   }
 }
 
-# https://www.terraform.io/docs/providers/azurerm/r/network_interface_backend_address_pool_association.html
 resource "azurerm_network_interface_backend_address_pool_association" "infra" {
   count = 3
   network_interface_id    = element(azurerm_network_interface.infra.*.id, count.index)
@@ -659,7 +641,6 @@ resource "azurerm_network_interface_backend_address_pool_association" "infra" {
   backend_address_pool_id = azurerm_lb_backend_address_pool.ingress-lb.id
 }
 
-# https://www.terraform.io/docs/providers/azurerm/r/managed_disk.html
 resource "azurerm_managed_disk" "infra" {
   count=3
   name = "openshift-${var.cluster_name}-infra-${count.index}-disk"
@@ -674,7 +655,6 @@ resource "azurerm_managed_disk" "infra" {
   }
 }
 
-# https://www.terraform.io/docs/providers/azurerm/r/virtual_machine.html
 resource "azurerm_virtual_machine" "infra" {
   count = 3
   name = "openshift-${var.cluster_name}-infra-${count.index}"
@@ -717,10 +697,8 @@ resource "azurerm_virtual_machine" "infra" {
   }
 }
 
-
 # Worker
 
-# https://www.terraform.io/docs/providers/azurerm/r/network_security_group.html
 resource "azurerm_network_security_group" "worker" {
   name = "openshift-${var.cluster_name}-worker"
   resource_group_name = azurerm_resource_group.main.name
@@ -794,7 +772,6 @@ resource "azurerm_network_security_group" "worker" {
   }
 }
 
-# https://www.terraform.io/docs/providers/azurerm/r/availability_set.html
 resource "azurerm_availability_set" "worker" {
   name                = "openshift-${var.cluster_name}-worker"
   resource_group_name = azurerm_resource_group.main.name
@@ -804,7 +781,6 @@ resource "azurerm_availability_set" "worker" {
   }
 }
 
-# https://www.terraform.io/docs/providers/azurerm/r/network_interface.html
 resource "azurerm_network_interface" "worker" {
   count = 3
   name = "openshift-${var.cluster_name}-worker-nic-${count.index}"
@@ -818,7 +794,6 @@ resource "azurerm_network_interface" "worker" {
   }
 }
 
-# https://www.terraform.io/docs/providers/azurerm/r/managed_disk.html
 resource "azurerm_managed_disk" "worker" {
   count=3
   name = "openshift-${var.cluster_name}-worker-${count.index}-disk"
@@ -833,7 +808,6 @@ resource "azurerm_managed_disk" "worker" {
   }
 }
 
-# https://www.terraform.io/docs/providers/azurerm/r/virtual_machine.html
 resource "azurerm_virtual_machine" "worker" {
   count = 3
   name = "openshift-${var.cluster_name}-worker-${count.index}"
@@ -874,4 +848,39 @@ resource "azurerm_virtual_machine" "worker" {
 
   tags {
   }
+}
+
+# DNS Entries
+
+resource "azurerm_dns_a_record" "api-public" {
+  name = "api.${var.cluster_name}"
+  resource_group_name = var.cluster_resource_group
+  zone_name = data.azurerm_dns_zone.cluster.name
+  ttl = 300
+  records = [
+    azurerm_lb.api-lb.private_ip_address
+  ]
+  tags = {}
+}
+
+resource "azurerm_dns_a_record" "api-private" {
+  name = "api-int.${var.cluster_name}"
+  resource_group_name = var.cluster_resource_group
+  zone_name = data.azurerm_dns_zone.cluster.name
+  ttl = 300
+  records = [
+    azurerm_lb.api-lb.private_ip_address
+  ]
+  tags = {}
+}
+
+resource "azurerm_dns_a_record" "ingress" {
+  name = "*.apps.${var.cluster_name}"
+  resource_group_name = var.cluster_resource_group
+  zone_name = data.azurerm_dns_zone.cluster.name
+  ttl = 300
+  records = [
+    azurerm_lb.ingress-lb.private_ip_address
+  ]
+  tags = {}
 }
