@@ -1,0 +1,7 @@
+- name: Generate OpenShift ignition files
+  import_tasks: deploy.yml
+  when: not teardown | default(false)
+
+- name: Delete OpenShift ignition files
+  import_tasks: teardown.yml
+  when: teardown | default(false)

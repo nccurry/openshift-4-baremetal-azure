@@ -1,0 +1,23 @@
+apiVersion: v1
+baseDomain: {{ ocp_base_domain }}
+compute:
+- hyperthreading: Enabled
+  name: worker
+  replicas: 0
+controlPlane:
+  hyperthreading: Enabled
+  name: master
+  replicas: {{ ocp_master_replicas }}
+metadata:
+  name: {{ ocp_cluster_name }}
+networking:
+  clusterNetwork:
+  - cidr: {{ ocp_cluster_cidr }}
+    hostPrefix: 23
+  networkType: OpenShiftSDN
+  serviceNetwork:
+  - {{ ocp_service_cidr }}
+platform:
+  none: {}
+pullSecret: '{{ ocp_pull_secret }}'
+sshKey: '{{ ocp_ssh_key }}'

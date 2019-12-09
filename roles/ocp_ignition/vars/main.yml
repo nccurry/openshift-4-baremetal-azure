@@ -1,0 +1,20 @@
+# DNS subdomain OpenShift cluster is installed against
+ocp_base_domain: ''
+
+# How many master hosts to deploy
+ocp_master_replicas: ''
+
+# Unique name of cluster
+ocp_cluster_name: ''
+
+# CIDR range cluster uses for pods
+ocp_cluster_cidr: ''
+
+# CIDR range cluster uses for services
+ocp_service_cidr: ''
+
+# Pull secret used for cluster activation
+ocp_pull_secret: ''
+
+# Public SSH key used to authenticate to cluster hosts
+ocp_ssh_key: ''

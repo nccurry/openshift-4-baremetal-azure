@@ -1,0 +1,8 @@
+- name: Apply openshift terraform plan
+  terraform:
+    project_path: "{{ role_path }}/files"
+    backend_config:
+      path: "{{ role_path }}/../../.state/az_ocp_infra/{{ ocp_cluster_name }}/terraform.tfstate"
+    force_init: true
+    variables:
+    register: apply_ocp

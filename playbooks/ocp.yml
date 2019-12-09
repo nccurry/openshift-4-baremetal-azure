@@ -1,0 +1,24 @@
+#!/usr/bin/env ansible-playbook
+---
+- name: Deploy OpenShift
+  hosts: localhost
+  become: false
+  gather_facts: false
+  environment:
+#   ARM_CLIENT_ID: "{{ az_client_id }}"
+#   ARM_SUBSCRIPTION_ID: "{{ az_subscription_id }}"
+#   ARM_TENANT_ID: "{{ az_tenant_id }}"
+  tasks:
+  - name: Generate ignition files
+    import_role:
+      name: ocp_ignition
+    tags:
+    - never
+    - ocp_ignition
+
+  - name: Deploy Azure infrastructure
+    import_role:
+      name: az_ocp_infra
+    tags:
+    - never
+    - az_ocp_infra

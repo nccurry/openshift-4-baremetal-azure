@@ -16,16 +16,15 @@ variable "cluster_network_name" {
 }
 variable "cluster_subnetwork_name" {
   description = "Name of subnetwork to deploy resources into"
+  default = "ocp3"
 }
 
 variable "cluster_identity_id" {
   description = "Service principal id to run cluster resources under"
 }
-
+variable "bootstrap_vm_size" {}
 variable "master_vm_size" {}
 variable "master_vm_count" {}
-variable "infra_vm_size" {}
-variable "infra_vm_count" {}
 variable "worker_vm_size" {}
 variable "worker_vm_count" {}
 variable "admin_user" {}
