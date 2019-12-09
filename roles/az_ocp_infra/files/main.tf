@@ -2,8 +2,6 @@ provider "azurerm" {
   disable_terraform_partner_id = true
 }
 
-# Data
-
 data "azurerm_resource_group" "main" {
   name     = var.azure_resource_group_name
   location = var.cluster_location
@@ -22,6 +20,22 @@ data "azurerm_dns_zone" "main" {
 
 data "template_file" "master" {
   template = file("cloudconfig.tpl")
+}
+
+# Storage
+
+resource "azurerm_storage_account" "cluster" {
+  name                     = "openshift-${var.cluster_name}"
+  resource_group_name      = data.azurerm_resource_group.main.name
+  location                 = var.cluster_location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+}
+
+resource "azurerm_storage_container" "ignition" {
+  name                  = "ignition"
+  storage_account_name  = azurerm_storage_account.cluster.name
+  container_access_type = "private"
 }
 
 # Load Balancers
@@ -179,6 +193,34 @@ resource "azurerm_lb_probe" "ingress-lb-http" {
   port = "80"
 }
 
+# CoreOS Image
+
+resource "azurerm_storage_container" "vhd" {
+  name                 = "openshift-${var.cluster_name}-rhcos"
+  storage_account_name = azurerm_storage_account.cluster.name
+}
+
+resource "azurerm_storage_blob" "rhcos_image" {
+  name                   = "openshift-${var.cluster_name}-rhcos.vhd"
+  storage_account_name   = azurerm_storage_account.cluster.name
+  storage_container_name = azurerm_storage_container.vhd.name
+  type                   = "block"
+  source_uri             = var.rhcos_image_url
+  metadata               = map("source_uri", var.rhcos_image_url)
+}
+
+resource "azurerm_image" "cluster" {
+  name                = "openshift-${var.cluster_name}-rhcos"
+  resource_group_name = data.azurerm_resource_group.main.name
+  location            = var.cluster_location
+
+  os_disk {
+    os_type  = "Linux"
+    os_state = "Generalized"
+    blob_uri = azurerm_storage_blob.rhcos_image.url
+  }
+}
+
 # Bootstrap
 
 resource "azurerm_network_security_group" "bootstrap" {
@@ -321,6 +363,52 @@ resource "azurerm_availability_set" "bootstrap" {
   tags = {}
 }
 
+data "azurerm_storage_account_sas" "ignition" {
+  connection_string = azurerm_storage_account.cluster.primary_connection_string
+  https_only        = true
+
+  resource_types {
+    service   = false
+    container = false
+    object    = true
+  }
+
+  services {
+    blob  = true
+    queue = false
+    table = false
+    file  = false
+  }
+
+  start  = timestamp()
+  expiry = timeadd(timestamp(), "24h")
+
+  permissions {
+    read    = true
+    list    = true
+    create  = false
+    add     = false
+    delete  = false
+    process = false
+    write   = false
+    update  = false
+  }
+}
+
+resource "azurerm_storage_blob" "ignition" {
+  name                   = "bootstrap.ign"
+  source                 = "${file(var.ignition_dir)}/bootstrap.ign"
+  storage_account_name   = azurerm_storage_account.cluster.name
+  storage_container_name = azurerm_storage_container.ignition.name
+  type                   = "block"
+}
+
+data "ignition_config" "bootstrap-redirect" {
+  replace {
+    source = "${azurerm_storage_blob.ignition.url}${data.azurerm_storage_account_sas.ignition.sas}"
+  }
+}
+
 resource "azurerm_network_interface" "bootstrap" {
   name = "openshift-${var.cluster_name}-bootstrap-nic"
   resource_group_name = data.azurerm_resource_group.main.name
@@ -345,8 +433,8 @@ resource "azurerm_managed_disk" "bootstrap" {
   location = var.cluster_location
   storage_account_type = "Premium_LRS"
   create_option = "FromImage"
-  image_reference_id = var.image_id
-  disk_size_gb = 200
+  image_reference_id = azurerm_image.cluster.id
+  disk_size_gb = 100
   tags = {}
 }
 
@@ -357,26 +445,18 @@ resource "azurerm_virtual_machine" "bootstrap" {
   network_interface_ids = [
     azurerm_network_interface.bootstrap.id
   ]
-  os_profile_linux_config = {
+  os_profile_linux_config {
     disable_password_authentication = true
-    ssh_keys = {
-      key_data = file(var.ssh_key_path)
-      path = "/home/${var.admin_user}/.ssh/authorized_keys"
-    }
   }
   vm_size = var.bootstrap_vm_size
   availability_set_id = azurerm_availability_set.bootstrap.id
   delete_os_disk_on_termination = true
   delete_data_disks_on_termination = true
-  identity {
-    type = "UserAssigned "
-    identity_ids = [
-      var.cluster_identity_id
-    ]
-  }
   os_profile {
     computer_name = "openshift-${var.cluster_name}-bootstrap"
-    admin_username = var.admin_user
+    admin_username = "core"
+    admin_password = "NotActuallyApplied!"
+    custom_data    = data.ignition_config.bootstrap-redirect.rendered
   }
   storage_os_disk {
     name = "openshift-${var.cluster_name}-bootstrap-disk"
@@ -573,7 +653,7 @@ resource "azurerm_managed_disk" "master" {
   location = var.cluster_location
   storage_account_type = "Premium_LRS"
   create_option = "FromImage"
-  image_reference_id = var.image_id
+  image_reference_id = azurerm_image.cluster.id
   disk_size_gb = 200
   tags = {}
 }
@@ -586,26 +666,18 @@ resource "azurerm_virtual_machine" "master" {
   network_interface_ids = [
     azurerm_network_interface.master.id
   ]
-  os_profile_linux_config = {
+  os_profile_linux_config {
     disable_password_authentication = true
-    ssh_keys = {
-      key_data = file(var.ssh_key_path)
-      path = "/home/${var.admin_user}/.ssh/authorized_keys"
-    }
   }
   vm_size = var.master_vm_size
   availability_set_id = azurerm_availability_set.master.id
   delete_os_disk_on_termination = true
   delete_data_disks_on_termination = true
-  identity {
-    type = "UserAssigned "
-    identity_ids = [
-      var.cluster_identity_id
-    ]
-  }
   os_profile {
     computer_name = "openshift-${var.cluster_name}-master-${count.index}"
-    admin_username = var.admin_user
+    admin_username = "core"
+    admin_password = "NotActuallyApplied!"
+    custom_data    = file("${var.ignition_dir}/master.ign")
   }
   storage_os_disk {
     name = "openshift-${var.cluster_name}-master-${count.index}-disk"
@@ -771,7 +843,7 @@ resource "azurerm_managed_disk" "worker" {
   location = var.cluster_location
   storage_account_type = "Premium_LRS"
   create_option = "FromImage"
-  image_reference_id = var.image_id
+  image_reference_id = azurerm_image.cluster.id
   disk_size_gb = 200
   tags = {}
 }
@@ -784,26 +856,18 @@ resource "azurerm_virtual_machine" "worker" {
   network_interface_ids = [
     azurerm_network_interface.worker.id
   ]
-  os_profile_linux_config = {
+  os_profile_linux_config {
     disable_password_authentication = true
-    ssh_keys = {
-      key_data = file(var.ssh_key_path)
-      path = "/home/${var.admin_user}/.ssh/authorized_keys"
-    }
   }
   vm_size = var.worker_vm_size
   availability_set_id = azurerm_availability_set.worker.id
   delete_os_disk_on_termination = true
   delete_data_disks_on_termination = true
-  identity {
-    type = "UserAssigned "
-    identity_ids = [
-      var.cluster_identity_id
-    ]
-  }
   os_profile {
     computer_name = "openshift-${var.cluster_name}-worker-${count.index}"
-    admin_username = var.admin_user
+    admin_username = core
+    admin_password = "NotActuallyApplied!"
+    custom_data    = file("${var.ignition_dir}/worker.ign")
   }
   storage_os_disk {
     name = "openshift-${var.cluster_name}-worker-${count.index}-disk"
