@@ -1,9 +1,27 @@
-variable "cluster_name" {}
-variable "cluster_location" {}
-variable "cluster_resource_group" {}
-variable "cluster_subnet_name" {}
-variable "cluster_network_name" {}
-variable "cluster_identity_id" {}
+variable "azure_resource_group_name" {
+  description = "Name of azure resource group to deploy resources into"
+  default = "OCP4"
+}
+variable "cluster_name" {
+  description = "Unique cluster identifier"
+  default = "ocp3"
+}
+variable "cluster_location" {
+  description = "The region to deploy resources into"
+  default = "eastus"
+}
+variable "cluster_network_name" {
+  description = "Name of network to deploy resources into"
+  default = "ocp3"
+}
+variable "cluster_subnetwork_name" {
+  description = "Name of subnetwork to deploy resources into"
+}
+
+variable "cluster_identity_id" {
+  description = "Service principal id to run cluster resources under"
+}
+
 variable "master_vm_size" {}
 variable "master_vm_count" {}
 variable "infra_vm_size" {}

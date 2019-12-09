@@ -1,24 +1,25 @@
 provider "azurerm" {
-  subscription_id = var.azure_subscription_id
-  client_id       = var.azure_client_id
-  client_secret   = var.azure_client_secret
-  tenant_id       = var.azure_tenant_id
+  disable_terraform_partner_id = true
 }
 
 resource "azurerm_resource_group" "main" {
-  name     = var.cluster_resource_group
+  name     = var.azure_resource_group_name
   location = var.cluster_location
 }
 
 data azurerm_subnet "cluster" {
-  name = var.cluster_subnet_name
+  name = var.cluster_subnetwork_name
   virtual_network_name = var.cluster_network_name
-  resource_group_name = var.cluster_resource_group
+  resource_group_name = var.azure_resource_group_name
 }
 
 data "azurerm_dns_zone" "cluster" {
   name                = var.dns_zone_name
   resource_group_name = azurerm_resource_group.main.name
+}
+
+data "template_file" "master" {
+  template = file("cloudconfig.tpl")
 }
 
 # Load Balancers
@@ -419,7 +420,7 @@ resource "azurerm_virtual_machine" "master" {
   os_profile_linux_config = {
     disable_password_authentication = true
     ssh_keys = {
-      key_data = file(var.sssh_key_path)
+      key_data = file(var.ssh_key_path)
       path = "/home/${var.admin_user}/.ssh/authorized_keys"
     }
   }
@@ -666,7 +667,7 @@ resource "azurerm_virtual_machine" "infra" {
   os_profile_linux_config = {
     disable_password_authentication = true
     ssh_keys = {
-      key_data = file(var.sssh_key_path)
+      key_data = file(var.ssh_key_path)
       path = "/home/${var.admin_user}/.ssh/authorized_keys"
     }
   }
@@ -819,7 +820,7 @@ resource "azurerm_virtual_machine" "worker" {
   os_profile_linux_config = {
     disable_password_authentication = true
     ssh_keys = {
-      key_data = file(var.sssh_key_path)
+      key_data = file(var.ssh_key_path)
       path = "/home/${var.admin_user}/.ssh/authorized_keys"
     }
   }
@@ -854,7 +855,7 @@ resource "azurerm_virtual_machine" "worker" {
 
 resource "azurerm_dns_a_record" "api-public" {
   name = "api.${var.cluster_name}"
-  resource_group_name = var.cluster_resource_group
+  resource_group_name = var.azure_resource_group_name
   zone_name = data.azurerm_dns_zone.cluster.name
   ttl = 300
   records = [
@@ -865,7 +866,7 @@ resource "azurerm_dns_a_record" "api-public" {
 
 resource "azurerm_dns_a_record" "api-private" {
   name = "api-int.${var.cluster_name}"
-  resource_group_name = var.cluster_resource_group
+  resource_group_name = var.azure_resource_group_name
   zone_name = data.azurerm_dns_zone.cluster.name
   ttl = 300
   records = [
@@ -876,7 +877,7 @@ resource "azurerm_dns_a_record" "api-private" {
 
 resource "azurerm_dns_a_record" "ingress" {
   name = "*.apps.${var.cluster_name}"
-  resource_group_name = var.cluster_resource_group
+  resource_group_name = var.azure_resource_group_name
   zone_name = data.azurerm_dns_zone.cluster.name
   ttl = 300
   records = [
