@@ -64,8 +64,8 @@ resource "azurerm_network_security_rule" "api-lb-api" {
     direction = "Inbound"
 }
 
-resource "azurerm_network_security_rule" "api-lb-machine-config" {
-    name = "openshift-${var.ocp_cluster_name}-api-lb-machine-config"
+resource "azurerm_network_security_rule" "api-lb-machine-config-bootstrap" {
+    name = "openshift-${var.ocp_cluster_name}-api-lb-machine-config-bootstrap"
     resource_group_name = data.azurerm_resource_group.main.name
     network_security_group_name = azurerm_network_security_group.api-lb.name
     description = "MachineConfig traffic from bootstrap / master"
@@ -73,7 +73,22 @@ resource "azurerm_network_security_rule" "api-lb-machine-config" {
     source_port_range = "22623"
     destination_port_range = "22623"
     source_application_security_group_ids = [
-      azurerm_network_security_group.bootstrap.id,
+      azurerm_network_security_group.bootstrap.id
+    ]
+    access = "Allow"
+    priority = "102"
+    direction = "Inbound"
+}
+
+resource "azurerm_network_security_rule" "api-lb-machine-config-master" {
+    name = "openshift-${var.ocp_cluster_name}-api-lb-machine-config-master"
+    resource_group_name = data.azurerm_resource_group.main.name
+    network_security_group_name = azurerm_network_security_group.api-lb.name
+    description = "MachineConfig traffic from bootstrap / master"
+    protocol = "Tcp"
+    source_port_range = "22623"
+    destination_port_range = "22623"
+    source_application_security_group_ids = [
       azurerm_network_security_group.master.id
     ]
     access = "Allow"
@@ -271,8 +286,8 @@ resource "azurerm_network_security_rule" "bootstrap-etcd" {
   direction = "Inbound"
 }
 
-resource "azurerm_network_security_rule" "bootstrap-api" {
-  name = "openshift-${var.ocp_cluster_name}-bootstrap-api"
+resource "azurerm_network_security_rule" "bootstrap-api-master" {
+  name = "openshift-${var.ocp_cluster_name}-bootstrap-api-master"
   resource_group_name = data.azurerm_resource_group.main.name
   network_security_group_name = azurerm_network_security_group.bootstrap.name
   description = "Api traffic from master hosts and load balancer"
@@ -280,7 +295,22 @@ resource "azurerm_network_security_rule" "bootstrap-api" {
   source_port_range = "6443"
   destination_port_range = "6443"
   source_application_security_group_ids = [
-    azurerm_network_security_group.master.id,
+    azurerm_network_security_group.master.id
+  ]
+  access = "Allow"
+  priority = "102"
+  direction = "Inbound"
+}
+
+resource "azurerm_network_security_rule" "bootstrap-api-api-lb" {
+  name = "openshift-${var.ocp_cluster_name}-bootstrap-api-api-lb"
+  resource_group_name = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.bootstrap.name
+  description = "Api traffic from master hosts and load balancer"
+  protocol = "Tcp"
+  source_port_range = "6443"
+  destination_port_range = "6443"
+  source_application_security_group_ids = [
     azurerm_network_security_group.api-lb.id
   ]
   access = "Allow"
@@ -426,7 +456,7 @@ data "azurerm_storage_account_sas" "ignition" {
 
 resource "azurerm_storage_blob" "ignition" {
   name                   = "bootstrap.ign"
-  source                 = file("${var.ocp_ignition_dir}/bootstrap.ign")
+  source                 = "${var.ocp_ignition_dir}/bootstrap.ign"
   storage_account_name   = azurerm_storage_account.cluster.name
   storage_container_name = azurerm_storage_container.ignition.name
   type                   = "block"
@@ -505,8 +535,8 @@ resource "azurerm_network_security_group" "master" {
   tags = {}
 }
 
-resource "azurerm_network_security_rule" "master-etcd" {
-  name = "openshift-${var.ocp_cluster_name}-master-etcd"
+resource "azurerm_network_security_rule" "master-etcd-bootstrap" {
+  name = "openshift-${var.ocp_cluster_name}-master-etcd-bootstrap"
   resource_group_name = data.azurerm_resource_group.main.name
   network_security_group_name = azurerm_network_security_group.master.name
   description = "Etcd traffic from bootstrap/master hosts"
@@ -514,7 +544,22 @@ resource "azurerm_network_security_rule" "master-etcd" {
   source_port_range = "2379-2380"
   destination_port_range = "2379-2380"
   source_application_security_group_ids = [
-    azurerm_network_security_group.bootstrap.id,
+    azurerm_network_security_group.bootstrap.id
+  ]
+  access = "Allow"
+  priority = "101"
+  direction = "Inbound"
+}
+
+resource "azurerm_network_security_rule" "master-etcd-master" {
+  name = "openshift-${var.ocp_cluster_name}-master-etcd-master"
+  resource_group_name = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.master.name
+  description = "Etcd traffic from bootstrap/master hosts"
+  protocol = "Tcp"
+  source_port_range = "2379-2380"
+  destination_port_range = "2379-2380"
+  source_application_security_group_ids = [
     azurerm_network_security_group.master.id
   ]
   access = "Allow"
@@ -522,8 +567,8 @@ resource "azurerm_network_security_rule" "master-etcd" {
   direction = "Inbound"
 }
 
-resource "azurerm_network_security_rule" "master-api" {
-  name = "openshift-${var.ocp_cluster_name}-master-api"
+resource "azurerm_network_security_rule" "master-api-bootstrap" {
+  name = "openshift-${var.ocp_cluster_name}-master-api-bootstrap"
   resource_group_name = data.azurerm_resource_group.main.name
   network_security_group_name = azurerm_network_security_group.master.name
   description = "Api traffic from cluster hosts and load balancer"
@@ -531,9 +576,54 @@ resource "azurerm_network_security_rule" "master-api" {
   source_port_range = "6443"
   destination_port_range = "6443"
   source_application_security_group_ids = [
-    azurerm_network_security_group.bootstrap.id,
-    azurerm_network_security_group.master.id,
-    azurerm_network_security_group.worker.id,
+    azurerm_network_security_group.bootstrap.id
+  ]
+  access = "Allow"
+  priority = "102"
+  direction = "Inbound"
+}
+
+resource "azurerm_network_security_rule" "master-api-master" {
+  name = "openshift-${var.ocp_cluster_name}-master-api-master"
+  resource_group_name = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.master.name
+  description = "Api traffic from cluster hosts and load balancer"
+  protocol = "Tcp"
+  source_port_range = "6443"
+  destination_port_range = "6443"
+  source_application_security_group_ids = [
+    azurerm_network_security_group.master.id
+  ]
+  access = "Allow"
+  priority = "102"
+  direction = "Inbound"
+}
+
+resource "azurerm_network_security_rule" "master-api-worker" {
+  name = "openshift-${var.ocp_cluster_name}-master-api-worker"
+  resource_group_name = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.master.name
+  description = "Api traffic from cluster hosts and load balancer"
+  protocol = "Tcp"
+  source_port_range = "6443"
+  destination_port_range = "6443"
+  source_application_security_group_ids = [
+    azurerm_network_security_group.worker.id
+  ]
+  access = "Allow"
+  priority = "102"
+  direction = "Inbound"
+}
+
+resource "azurerm_network_security_rule" "master-api-api-lb" {
+  name = "openshift-${var.ocp_cluster_name}-master-api-api-lb"
+  resource_group_name = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.master.name
+  description = "Api traffic from cluster hosts and load balancer"
+  protocol = "Tcp"
+  source_port_range = "6443"
+  destination_port_range = "6443"
+  source_application_security_group_ids = [
     azurerm_network_security_group.api-lb.id
   ]
   access = "Allow"
@@ -541,8 +631,8 @@ resource "azurerm_network_security_rule" "master-api" {
   direction = "Inbound"
 }
 
-resource "azurerm_network_security_rule" "master-host-services-tcp" {
-  name = "openshift-${var.ocp_cluster_name}-master-host-services-tcp"
+resource "azurerm_network_security_rule" "master-host-services-tcp-bootstrap" {
+  name = "openshift-${var.ocp_cluster_name}-master-host-services-tcp-bootstrap"
   resource_group_name = data.azurerm_resource_group.main.name
   network_security_group_name = azurerm_network_security_group.master.name
   description = "Host services traffic from cluster hosts"
@@ -550,8 +640,38 @@ resource "azurerm_network_security_rule" "master-host-services-tcp" {
   source_port_range = "9000-9999"
   destination_port_range = "9000-9999"
   source_application_security_group_ids = [
-    azurerm_network_security_group.bootstrap.id,
-    azurerm_network_security_group.master.id,
+    azurerm_network_security_group.bootstrap.id
+  ]
+  access = "Allow"
+  priority = "103"
+  direction = "Inbound"
+}
+
+resource "azurerm_network_security_rule" "master-host-services-tcp-master" {
+  name = "openshift-${var.ocp_cluster_name}-master-host-services-tcp-master"
+  resource_group_name = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.master.name
+  description = "Host services traffic from cluster hosts"
+  protocol = "Tcp"
+  source_port_range = "9000-9999"
+  destination_port_range = "9000-9999"
+  source_application_security_group_ids = [
+    azurerm_network_security_group.master.id
+  ]
+  access = "Allow"
+  priority = "103"
+  direction = "Inbound"
+}
+
+resource "azurerm_network_security_rule" "master-host-services-tcp-worker" {
+  name = "openshift-${var.ocp_cluster_name}-master-host-services-tcp-worker"
+  resource_group_name = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.master.name
+  description = "Host services traffic from cluster hosts"
+  protocol = "Tcp"
+  source_port_range = "9000-9999"
+  destination_port_range = "9000-9999"
+  source_application_security_group_ids = [
     azurerm_network_security_group.worker.id
   ]
   access = "Allow"
@@ -559,8 +679,8 @@ resource "azurerm_network_security_rule" "master-host-services-tcp" {
   direction = "Inbound"
 }
 
-resource "azurerm_network_security_rule" "master-kubernetes" {
-  name = "openshift-${var.ocp_cluster_name}-master-kubernetes"
+resource "azurerm_network_security_rule" "master-kubernetes-bootstrap" {
+  name = "openshift-${var.ocp_cluster_name}-master-kubernetes-bootstrap"
   resource_group_name = data.azurerm_resource_group.main.name
   network_security_group_name = azurerm_network_security_group.master.name
   description = "Kubernetes traffic from cluster hosts"
@@ -568,8 +688,38 @@ resource "azurerm_network_security_rule" "master-kubernetes" {
   source_port_range = "10249-10259"
   destination_port_range = "10249-10259"
   source_application_security_group_ids = [
-    azurerm_network_security_group.bootstrap.id,
-    azurerm_network_security_group.master.id,
+    azurerm_network_security_group.bootstrap.id
+  ]
+  access = "Allow"
+  priority = "104"
+  direction = "Inbound"
+}
+
+resource "azurerm_network_security_rule" "master-kubernetes-master" {
+  name = "openshift-${var.ocp_cluster_name}-master-kubernetes-master"
+  resource_group_name = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.master.name
+  description = "Kubernetes traffic from cluster hosts"
+  protocol = "Tcp"
+  source_port_range = "10249-10259"
+  destination_port_range = "10249-10259"
+  source_application_security_group_ids = [
+    azurerm_network_security_group.master.id
+  ]
+  access = "Allow"
+  priority = "104"
+  direction = "Inbound"
+}
+
+resource "azurerm_network_security_rule" "master-kubernetes-worker" {
+  name = "openshift-${var.ocp_cluster_name}-master-kubernetes-worker"
+  resource_group_name = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.master.name
+  description = "Kubernetes traffic from cluster hosts"
+  protocol = "Tcp"
+  source_port_range = "10249-10259"
+  destination_port_range = "10249-10259"
+  source_application_security_group_ids = [
     azurerm_network_security_group.worker.id
   ]
   access = "Allow"
@@ -577,8 +727,8 @@ resource "azurerm_network_security_rule" "master-kubernetes" {
   direction = "Inbound"
 }
 
-resource "azurerm_network_security_rule" "master-vxlan-geneve-1" {
-  name = "openshift-${var.ocp_cluster_name}-master-vxlan-geneve-1"
+resource "azurerm_network_security_rule" "master-vxlan-geneve-1-bootstrap" {
+  name = "openshift-${var.ocp_cluster_name}-master-vxlan-geneve-1-bootstrap"
   resource_group_name = data.azurerm_resource_group.main.name
   network_security_group_name = azurerm_network_security_group.master.name
   description = "SDN traffic from cluster hosts"
@@ -586,8 +736,38 @@ resource "azurerm_network_security_rule" "master-vxlan-geneve-1" {
   source_port_range = "4789"
   destination_port_range = "4789"
   source_application_security_group_ids = [
-    azurerm_network_security_group.bootstrap.id,
-    azurerm_network_security_group.master.id,
+    azurerm_network_security_group.bootstrap.id
+  ]
+  access = "Allow"
+  priority = "105"
+  direction = "Inbound"
+}
+
+resource "azurerm_network_security_rule" "master-vxlan-geneve-1-master" {
+  name = "openshift-${var.ocp_cluster_name}-master-vxlan-geneve-1-master"
+  resource_group_name = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.master.name
+  description = "SDN traffic from cluster hosts"
+  protocol = "Udp"
+  source_port_range = "4789"
+  destination_port_range = "4789"
+  source_application_security_group_ids = [
+    azurerm_network_security_group.master.id
+  ]
+  access = "Allow"
+  priority = "105"
+  direction = "Inbound"
+}
+
+resource "azurerm_network_security_rule" "master-vxlan-geneve-1-worker" {
+  name = "openshift-${var.ocp_cluster_name}-master-vxlan-geneve-1-worker"
+  resource_group_name = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.master.name
+  description = "SDN traffic from cluster hosts"
+  protocol = "Udp"
+  source_port_range = "4789"
+  destination_port_range = "4789"
+  source_application_security_group_ids = [
     azurerm_network_security_group.worker.id
   ]
   access = "Allow"
@@ -595,8 +775,8 @@ resource "azurerm_network_security_rule" "master-vxlan-geneve-1" {
   direction = "Inbound"
 }
 
-resource "azurerm_network_security_rule" "master-vxlan-geneve-2" {
-  name = "openshift-${var.ocp_cluster_name}-master-vxlan-geneve-2"
+resource "azurerm_network_security_rule" "master-vxlan-geneve-2-bootstrap" {
+  name = "openshift-${var.ocp_cluster_name}-master-vxlan-geneve-2-bootstrap"
   resource_group_name = data.azurerm_resource_group.main.name
   network_security_group_name = azurerm_network_security_group.master.name
   description = "SDN traffic from cluster hosts"
@@ -604,8 +784,38 @@ resource "azurerm_network_security_rule" "master-vxlan-geneve-2" {
   source_port_range = "6081"
   destination_port_range = "6081"
   source_application_security_group_ids = [
-    azurerm_network_security_group.bootstrap.id,
-    azurerm_network_security_group.master.id,
+    azurerm_network_security_group.bootstrap.id
+  ]
+  access = "Allow"
+  priority = "106"
+  direction = "Inbound"
+}
+
+resource "azurerm_network_security_rule" "master-vxlan-geneve-2-master" {
+  name = "openshift-${var.ocp_cluster_name}-master-vxlan-geneve-2-master"
+  resource_group_name = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.master.name
+  description = "SDN traffic from cluster hosts"
+  protocol = "Udp"
+  source_port_range = "6081"
+  destination_port_range = "6081"
+  source_application_security_group_ids = [
+    azurerm_network_security_group.master.id
+  ]
+  access = "Allow"
+  priority = "106"
+  direction = "Inbound"
+}
+
+resource "azurerm_network_security_rule" "master-vxlan-geneve-2-worker" {
+  name = "openshift-${var.ocp_cluster_name}-master-vxlan-geneve-2-worker"
+  resource_group_name = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.master.name
+  description = "SDN traffic from cluster hosts"
+  protocol = "Udp"
+  source_port_range = "6081"
+  destination_port_range = "6081"
+  source_application_security_group_ids = [
     azurerm_network_security_group.worker.id
   ]
   access = "Allow"
@@ -613,8 +823,8 @@ resource "azurerm_network_security_rule" "master-vxlan-geneve-2" {
   direction = "Inbound"
 }
 
-resource "azurerm_network_security_rule" "master-host-services-udp" {
-  name = "openshift-${var.ocp_cluster_name}-master-host-services-udp"
+resource "azurerm_network_security_rule" "master-host-services-udp-bootstrap" {
+  name = "openshift-${var.ocp_cluster_name}-master-host-services-udp-bootstrap"
   resource_group_name = data.azurerm_resource_group.main.name
   network_security_group_name = azurerm_network_security_group.master.name
   description = "Host services traffic from cluster hosts"
@@ -622,8 +832,38 @@ resource "azurerm_network_security_rule" "master-host-services-udp" {
   source_port_range = "9000-9999"
   destination_port_range = "9000-9999"
   source_application_security_group_ids = [
-    azurerm_network_security_group.bootstrap.id,
-    azurerm_network_security_group.master.id,
+    azurerm_network_security_group.bootstrap.id
+  ]
+  access = "Allow"
+  priority = "107"
+  direction = "Inbound"
+}
+
+resource "azurerm_network_security_rule" "master-host-services-udp-master" {
+  name = "openshift-${var.ocp_cluster_name}-master-host-services-udp-master"
+  resource_group_name = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.master.name
+  description = "Host services traffic from cluster hosts"
+  protocol = "Udp"
+  source_port_range = "9000-9999"
+  destination_port_range = "9000-9999"
+  source_application_security_group_ids = [
+    azurerm_network_security_group.master.id
+  ]
+  access = "Allow"
+  priority = "107"
+  direction = "Inbound"
+}
+
+resource "azurerm_network_security_rule" "master-host-services-udp-worker" {
+  name = "openshift-${var.ocp_cluster_name}-master-host-services-udp-worker"
+  resource_group_name = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.master.name
+  description = "Host services traffic from cluster hosts"
+  protocol = "Udp"
+  source_port_range = "9000-9999"
+  destination_port_range = "9000-9999"
+  source_application_security_group_ids = [
     azurerm_network_security_group.worker.id
   ]
   access = "Allow"
@@ -631,8 +871,8 @@ resource "azurerm_network_security_rule" "master-host-services-udp" {
   direction = "Inbound"
 }
 
-resource "azurerm_network_security_rule" "master-node-port" {
-  name = "openshift-${var.ocp_cluster_name}-master-node-port"
+resource "azurerm_network_security_rule" "master-node-port-bootstrap" {
+  name = "openshift-${var.ocp_cluster_name}-master-node-port-bootstrap"
   resource_group_name = data.azurerm_resource_group.main.name
   network_security_group_name = azurerm_network_security_group.master.name
   description = "NodePort traffic from cluster hosts"
@@ -640,8 +880,38 @@ resource "azurerm_network_security_rule" "master-node-port" {
   source_port_range = "30000-32767"
   destination_port_range = "30000-32767"
   source_application_security_group_ids = [
-    azurerm_network_security_group.bootstrap.id,
-    azurerm_network_security_group.master.id,
+    azurerm_network_security_group.bootstrap.id
+  ]
+  access = "Allow"
+  priority = "108"
+  direction = "Inbound"
+}
+
+resource "azurerm_network_security_rule" "master-node-port-master" {
+  name = "openshift-${var.ocp_cluster_name}-master-node-port-master"
+  resource_group_name = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.master.name
+  description = "NodePort traffic from cluster hosts"
+  protocol = "Udp"
+  source_port_range = "30000-32767"
+  destination_port_range = "30000-32767"
+  source_application_security_group_ids = [
+    azurerm_network_security_group.master.id
+  ]
+  access = "Allow"
+  priority = "108"
+  direction = "Inbound"
+}
+
+resource "azurerm_network_security_rule" "master-node-port-worker" {
+  name = "openshift-${var.ocp_cluster_name}-master-node-port-worker"
+  resource_group_name = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.master.name
+  description = "NodePort traffic from cluster hosts"
+  protocol = "Udp"
+  source_port_range = "30000-32767"
+  destination_port_range = "30000-32767"
+  source_application_security_group_ids = [
     azurerm_network_security_group.worker.id
   ]
   access = "Allow"
@@ -744,8 +1014,8 @@ resource "azurerm_network_security_group" "worker" {
   tags = {}
 }
 
-resource "azurerm_network_security_rule" "worker-host-services-tcp" {
-  name = "openshift-${var.ocp_cluster_name}-worker-host-services-tcp"
+resource "azurerm_network_security_rule" "worker-host-services-tcp-master" {
+  name = "openshift-${var.ocp_cluster_name}-worker-host-services-tcp-master"
   resource_group_name = data.azurerm_resource_group.main.name
   network_security_group_name = azurerm_network_security_group.worker.name
   description = "Host services traffic from cluster hosts"
@@ -753,7 +1023,22 @@ resource "azurerm_network_security_rule" "worker-host-services-tcp" {
   source_port_range = "9000-9999"
   destination_port_range = "9000-9999"
   source_application_security_group_ids = [
-    azurerm_network_security_group.master.id,
+    azurerm_network_security_group.master.id
+  ]
+  access = "Allow"
+  priority = "101"
+  direction = "Inbound"
+}
+
+resource "azurerm_network_security_rule" "worker-host-services-tcp-worker" {
+  name = "openshift-${var.ocp_cluster_name}-worker-host-services-tcp-worker"
+  resource_group_name = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.worker.name
+  description = "Host services traffic from cluster hosts"
+  protocol = "Tcp"
+  source_port_range = "9000-9999"
+  destination_port_range = "9000-9999"
+  source_application_security_group_ids = [
     azurerm_network_security_group.worker.id
   ]
   access = "Allow"
@@ -761,8 +1046,9 @@ resource "azurerm_network_security_rule" "worker-host-services-tcp" {
   direction = "Inbound"
 }
 
-resource "azurerm_network_security_rule" "worker-kubernetes" {
-  name = "openshift-${var.ocp_cluster_name}-worker-kubernetes"
+
+resource "azurerm_network_security_rule" "worker-kubernetes-master" {
+  name = "openshift-${var.ocp_cluster_name}-worker-kubernetes-master"
   resource_group_name = data.azurerm_resource_group.main.name
   network_security_group_name = azurerm_network_security_group.worker.name
   description = "Kubernetes traffic from cluster hosts"
@@ -770,7 +1056,22 @@ resource "azurerm_network_security_rule" "worker-kubernetes" {
   source_port_range = "10249-10259"
   destination_port_range = "10249-10259"
   source_application_security_group_ids = [
-    azurerm_network_security_group.master.id,
+    azurerm_network_security_group.master.id
+  ]
+  access = "Allow"
+  priority = "102"
+  direction = "Inbound"
+}
+
+resource "azurerm_network_security_rule" "worker-kubernetes-worker" {
+  name = "openshift-${var.ocp_cluster_name}-worker-kubernetes-worker"
+  resource_group_name = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.worker.name
+  description = "Kubernetes traffic from cluster hosts"
+  protocol = "Tcp"
+  source_port_range = "10249-10259"
+  destination_port_range = "10249-10259"
+  source_application_security_group_ids = [
     azurerm_network_security_group.worker.id
   ]
   access = "Allow"
@@ -778,8 +1079,8 @@ resource "azurerm_network_security_rule" "worker-kubernetes" {
   direction = "Inbound"
 }
 
-resource "azurerm_network_security_rule" "worker-vxlan-geneve-1" {
-  name = "openshift-${var.ocp_cluster_name}-worker-vxlan-geneve-1"
+resource "azurerm_network_security_rule" "worker-vxlan-geneve-1-master" {
+  name = "openshift-${var.ocp_cluster_name}-worker-vxlan-geneve-1-master"
   resource_group_name = data.azurerm_resource_group.main.name
   network_security_group_name = azurerm_network_security_group.worker.name
   description = "SDN traffic from cluster hosts"
@@ -787,7 +1088,22 @@ resource "azurerm_network_security_rule" "worker-vxlan-geneve-1" {
   source_port_range = "4789"
   destination_port_range = "4789"
   source_application_security_group_ids = [
-    azurerm_network_security_group.master.id,
+    azurerm_network_security_group.master.id
+  ]
+  access = "Allow"
+  priority = "103"
+  direction = "Inbound"
+}
+
+resource "azurerm_network_security_rule" "worker-vxlan-geneve-1-worker" {
+  name = "openshift-${var.ocp_cluster_name}-worker-vxlan-geneve-1-worker"
+  resource_group_name = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.worker.name
+  description = "SDN traffic from cluster hosts"
+  protocol = "Udp"
+  source_port_range = "4789"
+  destination_port_range = "4789"
+  source_application_security_group_ids = [
     azurerm_network_security_group.worker.id
   ]
   access = "Allow"
@@ -795,8 +1111,8 @@ resource "azurerm_network_security_rule" "worker-vxlan-geneve-1" {
   direction = "Inbound"
 }
 
-resource "azurerm_network_security_rule" "worker-vxlan-geneve-2" {
-  name = "openshift-${var.ocp_cluster_name}-worker-vxlan-geneve-2"
+resource "azurerm_network_security_rule" "worker-vxlan-geneve-2-master" {
+  name = "openshift-${var.ocp_cluster_name}-worker-vxlan-geneve-2-master"
   resource_group_name = data.azurerm_resource_group.main.name
   network_security_group_name = azurerm_network_security_group.worker.name
   description = "SDN traffic from cluster hosts"
@@ -804,7 +1120,22 @@ resource "azurerm_network_security_rule" "worker-vxlan-geneve-2" {
   source_port_range = "6081"
   destination_port_range = "6081"
   source_application_security_group_ids = [
-    azurerm_network_security_group.master.id,
+    azurerm_network_security_group.master.id
+  ]
+  access = "Allow"
+  priority = "104"
+  direction = "Inbound"
+}
+
+resource "azurerm_network_security_rule" "worker-vxlan-geneve-2-worker" {
+  name = "openshift-${var.ocp_cluster_name}-worker-vxlan-geneve-2-worker"
+  resource_group_name = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.worker.name
+  description = "SDN traffic from cluster hosts"
+  protocol = "Udp"
+  source_port_range = "6081"
+  destination_port_range = "6081"
+  source_application_security_group_ids = [
     azurerm_network_security_group.worker.id
   ]
   access = "Allow"
@@ -812,8 +1143,8 @@ resource "azurerm_network_security_rule" "worker-vxlan-geneve-2" {
   direction = "Inbound"
 }
 
-resource "azurerm_network_security_rule" "worker-host-services-udp" {
-  name = "openshift-${var.ocp_cluster_name}-worker-host-services-udp"
+resource "azurerm_network_security_rule" "worker-host-services-udp-master" {
+  name = "openshift-${var.ocp_cluster_name}-worker-host-services-udp-master"
   resource_group_name = data.azurerm_resource_group.main.name
   network_security_group_name = azurerm_network_security_group.worker.name
   description = "Host services traffic from cluster hosts"
@@ -821,7 +1152,22 @@ resource "azurerm_network_security_rule" "worker-host-services-udp" {
   source_port_range = "9000-9999"
   destination_port_range = "9000-9999"
   source_application_security_group_ids = [
-    azurerm_network_security_group.master.id,
+    azurerm_network_security_group.master.id
+  ]
+  access = "Allow"
+  priority = "105"
+  direction = "Inbound"
+}
+
+resource "azurerm_network_security_rule" "worker-host-services-udp-worker" {
+  name = "openshift-${var.ocp_cluster_name}-worker-host-services-udp-worker"
+  resource_group_name = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.worker.name
+  description = "Host services traffic from cluster hosts"
+  protocol = "Udp"
+  source_port_range = "9000-9999"
+  destination_port_range = "9000-9999"
+  source_application_security_group_ids = [
     azurerm_network_security_group.worker.id
   ]
   access = "Allow"
@@ -829,8 +1175,8 @@ resource "azurerm_network_security_rule" "worker-host-services-udp" {
   direction = "Inbound"
 }
 
-resource "azurerm_network_security_rule" "worker-node-port" {
-  name = "openshift-${var.ocp_cluster_name}-worker-node-port"
+resource "azurerm_network_security_rule" "worker-node-port-master" {
+  name = "openshift-${var.ocp_cluster_name}-worker-node-port-master"
   resource_group_name = data.azurerm_resource_group.main.name
   network_security_group_name = azurerm_network_security_group.worker.name
   description = "NodePort traffic from cluster hosts"
@@ -838,7 +1184,22 @@ resource "azurerm_network_security_rule" "worker-node-port" {
   source_port_range = "30000-32767"
   destination_port_range = "30000-32767"
   source_application_security_group_ids = [
-    azurerm_network_security_group.master.id,
+    azurerm_network_security_group.master.id
+  ]
+  access = "Allow"
+  priority = "106"
+  direction = "Inbound"
+}
+
+resource "azurerm_network_security_rule" "worker-node-port-worker" {
+  name = "openshift-${var.ocp_cluster_name}-worker-node-port-worker"
+  resource_group_name = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.worker.name
+  description = "NodePort traffic from cluster hosts"
+  protocol = "Udp"
+  source_port_range = "30000-32767"
+  destination_port_range = "30000-32767"
+  source_application_security_group_ids = [
     azurerm_network_security_group.worker.id
   ]
   access = "Allow"
