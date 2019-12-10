@@ -14,13 +14,14 @@ These playbooks assume the following have already been created in an Azure envir
 ### Create service principal for terraform
 
 ```shell script
-# Get resource group id
-resourceGroupId=$(az group list --query '[?name == `mygroup`] | [0].id')
+resourceGroupName='resourcegroup'
+servicePrincipalName='ocp4-terraform'
+resourceGroupId=$(az group list --query "[?name == '${resourceGroupName}'] | [0].id" -o tsv)
 
-
-
-# Create service principal
-az ad sp create-for-rbac --name {appId} --password "{strong password}" --scopes ${resourceGroupId}
+# Create service principal - Role list here: https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles
+servicePrincipal=$(az ad sp create-for-rbac --name ${servicePrincipalName} --scope ${resourceGroupId} --role 'Contributor')
+servicePrincipalId=$(echo ${servicePrincipal} | jq -r .appId)
+servicePrincipalPassword=$(echo ${servicePrincipal} | jq -r .password)
 ```
 
 ## Set environment variables
@@ -52,8 +53,17 @@ HISTCONTROL=ignorespace
 az account list-locations -o table
 
 # List resource group with name 'groupname'
-az group list --query '[?name == `groupname`] | [0]'
+resourceGroupName='resourcegroup'
+az group list --query "[?name == '${resourceGroupName}'] | [0]"
 
 # List all azure roles
 az role definition list -o table
+
+# List service principal information
+servicePrincipalName='ocp4-terraform'
+az ad sp list --query "[?appDisplayName=='${servicePrincipalName}'] | [0]"
+
+# Delete service principal 
+servicePrincipalId=$(az ad sp list --query "[?appDisplayName=='${servicePrincipalName}'] | [0].appId" -o tsv)
+az ad sp delete --id ${servicePrincipalId}
 ```
