@@ -34,7 +34,6 @@ variable "az_rhcos_image_url" {
   description = "URL where RHCOS vhd image is hosted"
 }
 
-
 variable "ocp_cluster_name" {
   description = "Unique cluster identifier"
 }

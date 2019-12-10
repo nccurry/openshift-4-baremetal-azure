@@ -2,3 +2,4 @@
 *.tfvars
 .state/
 vars/test.yml
+.terraform/
