@@ -1,5 +1,5 @@
 # Directory to generate ignition files into
-ignition_dir: ''
+ocp_ignition_dir: ''
 
 # DNS subdomain OpenShift cluster is installed against
 ocp_base_domain: ''

@@ -1,16 +1,16 @@
 - name: Create ignition directory
   file:
     state: directory
-    path: "{{ ignition_dir }}"
+    path: "{{ ocp_ignition_dir }}"
 
 - name: Create install-config.yaml
   template:
     src: "{{ role_path }}/templates/install-config.yaml.j2"
-    dest: "{{ ignition_dir }}/install-config.yaml"
+    dest: "{{ ocp_ignition_dir }}/install-config.yaml"
 
 - name: Generate ignition files
   shell: "openshift-install
           create ignition-configs
-          --dir='{{ ignition_dir }}'"
+          --dir='{{ ocp_ignition_dir }}'"
   args:
-    creates: "{{ ignition_dir }}/bootstrap.ign"
+    creates: "{{ ocp_ignition_dir }}/bootstrap.ign"

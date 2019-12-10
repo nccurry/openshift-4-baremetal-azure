@@ -1,58 +1,66 @@
-variable "azure_resource_group_name" {
+variable "az_resource_group_name" {
   description = "Name of azure resource group to deploy resources into"
 }
 
 variable "az_client_id" {
-  description = ""
+  description = "Id of service principal used to deploy resources"
 }
 
 variable "az_subscription_id" {
-  description = ""
+  description = " Id of azure subscription"
 }
 
 variable "az_tenant_id" {
-  description = ""
+  description = "Id of azure tenant"
 }
 
-variable "cluster_name" {
-  description = "Unique cluster identifier"
-}
-
-variable "cluster_location" {
+variable "az_location" {
   description = "The region to deploy resources into"
 }
-variable "cluster_network_name" {
+
+variable "az_network_name" {
   description = "Name of network to deploy resources into"
 }
-variable "cluster_subnetwork_name" {
+
+variable "az_subnetwork_name" {
   description = "Name of subnetwork to deploy resources into"
 }
 
-variable "rhcos_image_url" {
+variable "az_dns_zone_name" {
+  description = "Name of DNS zone"
+}
+
+variable "az_rhcos_image_url" {
   description = "URL where RHCOS vhd image is hosted"
 }
 
-variable "ignition_dir" {
+
+variable "ocp_cluster_name" {
+  description = "Unique cluster identifier"
+}
+
+variable "ocp_ignition_dir" {
   description = "Path to ignition files"
 }
 
-variable "bootstrap_vm_size" {
+variable "ocp_bootstrap_vm_size" {
   description = "Instance size of bootstrap vm"
 }
-variable "master_vm_size" {
+
+variable "ocp_master_vm_size" {
   description = "Instnace size of master vms"
 }
-variable "master_vm_count" {
+
+variable "ocp_master_replicas" {
   description = "Number of master hosts to deploy. Must be either 1 or 3"
 
 }
-variable "worker_vm_size" {
+
+variable "ocp_worker_vm_size" {
     description = "Instnace size of worker vms"
 }
-variable "worker_vm_count" {
+
+variable "ocp_worker_replicas" {
   description = "Number of worker hosts to deploy."
 }
 
-variable "dns_zone_name" {
-  description = "Name of DNS zone"
-}

@@ -33,7 +33,7 @@ HISTCONTROL=ignorespace
 # Store azure terraform provider variables
 # We don't want these accidentally laying around since they are sensitive
 # These get picked up automatically by the terraform azure provider
- ARM_CLIENT_SECRET=<service principal secret>
+ export ARM_CLIENT_SECRET=<service principal secret>
 ```
 
 ## Run ansible playbooks
