@@ -1,9 +1,23 @@
 variable "azure_resource_group_name" {
   description = "Name of azure resource group to deploy resources into"
 }
+
+variable "az_client_id" {
+  description = ""
+}
+
+variable "az_subscription_id" {
+  description = ""
+}
+
+variable "az_tenant_id" {
+  description = ""
+}
+
 variable "cluster_name" {
   description = "Unique cluster identifier"
 }
+
 variable "cluster_location" {
   description = "The region to deploy resources into"
 }
@@ -22,12 +36,23 @@ variable "ignition_dir" {
   description = "Path to ignition files"
 }
 
-variable "bootstrap_vm_size" {}
-variable "master_vm_size" {}
-variable "master_vm_count" {}
-variable "worker_vm_size" {}
-variable "worker_vm_count" {}
-variable "ssh_key_data" {
-  description = "Contents of public ssh key used to access cluster hosts"
+variable "bootstrap_vm_size" {
+  description = "Instance size of bootstrap vm"
 }
-variable "dns_zone_name" {}
+variable "master_vm_size" {
+  description = "Instnace size of master vms"
+}
+variable "master_vm_count" {
+  description = "Number of master hosts to deploy. Must be either 1 or 3"
+
+}
+variable "worker_vm_size" {
+    description = "Instnace size of worker vms"
+}
+variable "worker_vm_count" {
+  description = "Number of worker hosts to deploy."
+}
+
+variable "dns_zone_name" {
+  description = "Name of DNS zone"
+}

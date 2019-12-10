@@ -11,6 +11,18 @@ These playbooks assume the following have already been created in an Azure envir
 - Virtual Network / Subnetwork
 - DNS Zone
 
+### Create service principal for terraform
+
+```shell script
+# Get resource group id
+resourceGroupId=$(az group list --query '[?name == `mygroup`] | [0].id')
+
+
+
+# Create service principal
+az ad sp create-for-rbac --name {appId} --password "{strong password}" --scopes ${resourceGroupId}
+```
+
 ## Set environment variables
 
 ```shell script
@@ -20,17 +32,17 @@ HISTCONTROL=ignorespace
 # Store azure terraform provider variables
 # We don't want these accidentally laying around since they are sensitive
 # These get picked up automatically by the terraform azure provider
- ARM_CLIENT_ID=<service principal id>
- ARM_SUBSCRIPTION_ID=<subscription id>
- ARM_TENANT_ID=<tenant id>
  ARM_CLIENT_SECRET=<service principal secret>
 ```
 
-## Deploy terraform templates
+## Run ansible playbooks
 
 ```shell script
-terraform init
-terraform apply -var-file="environment.tfvars"
+# Generate ignition files
+ ./playbooks/ocp.yml -v -e '@vars/<environment>.yml' -t ocp_ignition
+
+# Deploy OpenShift terraform template
+ ./playbooks/ocp.yml -v -e '@vars/<environment>.yml' -t az_ocp_infra
 ```
 
 ## Miscellaneous
@@ -40,9 +52,8 @@ terraform apply -var-file="environment.tfvars"
 az account list-locations -o table
 
 # List resource group with name 'groupname'
-az group list --query '[?name == `groupname`]'
+az group list --query '[?name == `groupname`] | [0]'
 
-# List all service principals
-
-
+# List all azure roles
+az role definition list -o table
 ```

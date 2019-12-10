@@ -1,4 +1,4 @@
-- name: Create state directory
+- name: Create ignition directory
   file:
     state: directory
     path: "{{ ignition_dir }}"

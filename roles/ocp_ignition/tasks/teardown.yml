@@ -1,0 +1,4 @@
+- name: Delete ignition directory
+  file:
+    state: absent
+    path: "{{ ignition_dir }}"
