@@ -1,8 +1,13 @@
+terraform {
+  backend "local" {}
+}
+
 provider "azurerm" {
   client_id = var.az_client_id
   subscription_id = var.az_subscription_id
   tenant_id = var.az_tenant_id
   disable_terraform_partner_id = true
+  skip_provider_registration = true
 }
 
 data "azurerm_resource_group" "main" {
@@ -23,7 +28,7 @@ data "azurerm_dns_zone" "main" {
 # Storage
 
 resource "azurerm_storage_account" "cluster" {
-  name                     = "openshift-${var.ocp_cluster_name}"
+  name                     = "openshift${var.ocp_cluster_name}"
   resource_group_name      = data.azurerm_resource_group.main.name
   location                 = var.az_location
   account_tier             = "Standard"
