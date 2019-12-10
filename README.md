@@ -11,6 +11,10 @@ These playbooks assume the following have already been created in an Azure envir
 - Virtual Network / Subnetwork
 - DNS Zone
 
+And the following are met by the host
+- openshift-install binary on PATH
+- terraform binary on PATH
+
 ### Create service principal for terraform
 
 ```shell script

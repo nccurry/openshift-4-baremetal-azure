@@ -426,7 +426,7 @@ data "azurerm_storage_account_sas" "ignition" {
 
 resource "azurerm_storage_blob" "ignition" {
   name                   = "bootstrap.ign"
-  source                 = "${file(var.ocp_ignition_dir)}/bootstrap.ign"
+  source                 = file("${var.ocp_ignition_dir}/bootstrap.ign")
   storage_account_name   = azurerm_storage_account.cluster.name
   storage_container_name = azurerm_storage_container.ignition.name
   type                   = "block"
