@@ -334,18 +334,18 @@ resource "azurerm_network_interface_backend_address_pool_association" "bootstrap
   backend_address_pool_id = azurerm_lb_backend_address_pool.api-lb.id
 }
 
-resource "azurerm_managed_disk" "bootstrap" {
-  name = "openshift-${var.ocp_cluster_name}-bootstrap-disk"
-  resource_group_name = data.azurerm_resource_group.main.name
-  location = var.az_location
-  storage_account_type = "Premium_LRS"
-  create_option = "Import"
-  source_uri = azurerm_storage_blob.rhcos_image.url
-//  create_option = "FromImage"
-//  image_reference_id = azurerm_image.cluster.id
-  disk_size_gb = 100
-  tags = {}
-}
+//resource "azurerm_managed_disk" "bootstrap" {
+//  name = "openshift-${var.ocp_cluster_name}-bootstrap-disk"
+//  resource_group_name = data.azurerm_resource_group.main.name
+//  location = var.az_location
+//  storage_account_type = "Premium_LRS"
+//  create_option = "Import"
+//  source_uri = azurerm_storage_blob.rhcos_image.url
+////  create_option = "FromImage"
+////  image_reference_id = azurerm_image.cluster.id
+//  disk_size_gb = 100
+//  tags = {}
+//}
 
 resource "azurerm_virtual_machine" "bootstrap" {
   name = "openshift-${var.ocp_cluster_name}-bootstrap"
@@ -355,7 +355,7 @@ resource "azurerm_virtual_machine" "bootstrap" {
     azurerm_network_interface.bootstrap.id
   ]
   os_profile_linux_config {
-    disable_password_authentication = true
+    disable_password_authentication = false
   }
   vm_size = var.ocp_bootstrap_vm_size
   availability_set_id = azurerm_availability_set.bootstrap.id
@@ -419,19 +419,19 @@ resource "azurerm_network_interface_backend_address_pool_association" "master" {
   backend_address_pool_id = azurerm_lb_backend_address_pool.api-lb.id
 }
 
-resource "azurerm_managed_disk" "master" {
-  count = var.ocp_master_replicas
-  name = "openshift-${var.ocp_cluster_name}-master-${count.index}-disk"
-  resource_group_name = data.azurerm_resource_group.main.name
-  location = var.az_location
-  storage_account_type = "Premium_LRS"
-  create_option = "Import"
-  source_uri = azurerm_storage_blob.rhcos_image.url
-//  create_option = "FromImage"
-//  image_reference_id = azurerm_image.cluster.id
-  disk_size_gb = 200
-  tags = {}
-}
+//resource "azurerm_managed_disk" "master" {
+//  count = var.ocp_master_replicas
+//  name = "openshift-${var.ocp_cluster_name}-master-${count.index}-disk"
+//  resource_group_name = data.azurerm_resource_group.main.name
+//  location = var.az_location
+//  storage_account_type = "Premium_LRS"
+//  create_option = "Import"
+//  source_uri = azurerm_storage_blob.rhcos_image.url
+////  create_option = "FromImage"
+////  image_reference_id = azurerm_image.cluster.id
+//  disk_size_gb = 200
+//  tags = {}
+//}
 
 resource "azurerm_virtual_machine" "master" {
   count = var.ocp_master_replicas
@@ -442,7 +442,7 @@ resource "azurerm_virtual_machine" "master" {
     element(azurerm_network_interface.master.*.id, count.index)
   ]
   os_profile_linux_config {
-    disable_password_authentication = true
+    disable_password_authentication = false
   }
   vm_size = var.ocp_master_vm_size
   availability_set_id = azurerm_availability_set.master.id
@@ -499,19 +499,19 @@ resource "azurerm_network_interface" "worker" {
   }
 }
 
-resource "azurerm_managed_disk" "worker" {
-  count = var.ocp_worker_replicas
-  name = "openshift-${var.ocp_cluster_name}-worker-${count.index}-disk"
-  resource_group_name = data.azurerm_resource_group.main.name
-  location = var.az_location
-  storage_account_type = "Premium_LRS"
-  create_option = "Import"
-  source_uri = azurerm_storage_blob.rhcos_image.url
-//  create_option = "FromImage"
-//  image_reference_id = azurerm_image.cluster.id
-  disk_size_gb = 200
-  tags = {}
-}
+//resource "azurerm_managed_disk" "worker" {
+//  count = var.ocp_worker_replicas
+//  name = "openshift-${var.ocp_cluster_name}-worker-${count.index}-disk"
+//  resource_group_name = data.azurerm_resource_group.main.name
+//  location = var.az_location
+//  storage_account_type = "Premium_LRS"
+//  create_option = "Import"
+//  source_uri = azurerm_storage_blob.rhcos_image.url
+////  create_option = "FromImage"
+////  image_reference_id = azurerm_image.cluster.id
+//  disk_size_gb = 200
+//  tags = {}
+//}
 
 resource "azurerm_virtual_machine" "worker" {
   count = var.ocp_worker_replicas
@@ -522,7 +522,7 @@ resource "azurerm_virtual_machine" "worker" {
     element(azurerm_network_interface.worker.*.id, count.index)
   ]
   os_profile_linux_config {
-    disable_password_authentication = true
+    disable_password_authentication = false
   }
   vm_size = var.ocp_worker_vm_size
   availability_set_id = azurerm_availability_set.worker.id
