@@ -13,7 +13,7 @@
       az_network_name: "{{ az_network_name }}"
       az_subnetwork_name: "{{ az_subnetwork_name }}"
       az_dns_zone_name: "{{ az_dns_zone_name }}"
-      az_rhcos_image_url: "{{ az_rhcos_image_url }}"
+      az_rhcos_image_id: "{{ az_rhcos_image_id }}"
       ocp_cluster_name: "{{ ocp_cluster_name }}"
       ocp_ignition_dir: "{{ ocp_ignition_dir }}"
       ocp_bootstrap_vm_size: "{{ ocp_bootstrap_vm_size }}"

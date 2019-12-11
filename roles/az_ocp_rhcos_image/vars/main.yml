@@ -1,0 +1,9 @@
+az_resource_group_name:
+az_client_id:
+az_subscription_id:
+az_tenant_id:
+az_location:
+
+# URL where RHCOS .vhd image is hosted in azure
+# https://github.com/openshift/installer/blob/release-4.2/data/data/rhcos.json#L54
+az_rhcos_image_url:

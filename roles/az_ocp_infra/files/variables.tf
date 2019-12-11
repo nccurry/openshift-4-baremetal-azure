@@ -30,7 +30,7 @@ variable "az_dns_zone_name" {
   description = "Name of DNS zone"
 }
 
-variable "az_rhcos_image_url" {
+variable "az_rhcos_image_id" {
   description = "URL where RHCOS vhd image is hosted"
 }
 

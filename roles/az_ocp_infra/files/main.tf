@@ -7,10 +7,8 @@ provider "azurerm" {
   subscription_id = var.az_subscription_id
   tenant_id = var.az_tenant_id
   skip_provider_registration = true
-  # Need to comment out for version <1.34.0
-  #disable_terraform_partner_id = true
-  # Need to pin version due to bug https://github.com/terraform-providers/terraform-provider-azurerm/issues/4361
-  version = "<1.34.0"
+  disable_terraform_partner_id = true
+  version = "~>1.38.0"
 }
 
 data "azurerm_resource_group" "main" {
@@ -26,22 +24,6 @@ data azurerm_subnet "main" {
 data "azurerm_dns_zone" "main" {
   name                = var.az_dns_zone_name
   resource_group_name = data.azurerm_resource_group.main.name
-}
-
-# Storage
-
-resource "azurerm_storage_account" "cluster" {
-  name                     = "openshift${var.ocp_cluster_name}"
-  resource_group_name      = data.azurerm_resource_group.main.name
-  location                 = var.az_location
-  account_tier             = "Standard"
-  account_replication_type = "LRS"
-}
-
-resource "azurerm_storage_container" "ignition" {
-  name                  = "ignition"
-  storage_account_name  = azurerm_storage_account.cluster.name
-  container_access_type = "private"
 }
 
 # Load Balancers
@@ -208,36 +190,27 @@ resource "azurerm_lb_probe" "ingress-lb-http" {
   port = "80"
 }
 
-# CoreOS Image
-
-resource "azurerm_storage_container" "vhd" {
-  name                 = "openshift-${var.ocp_cluster_name}-rhcos"
-  storage_account_name = azurerm_storage_account.cluster.name
-}
-
-resource "azurerm_storage_blob" "rhcos_image" {
-  name                   = "openshift-${var.ocp_cluster_name}-rhcos.vhd"
-  resource_group_name = data.azurerm_resource_group.main.name
-  storage_account_name   = azurerm_storage_account.cluster.name
-  storage_container_name = azurerm_storage_container.vhd.name
-  type                   = "block"
-  source_uri             = var.az_rhcos_image_url
-  metadata               = map("source_uri", var.az_rhcos_image_url)
-}
-
-resource "azurerm_image" "cluster" {
-  name                = "openshift-${var.ocp_cluster_name}-rhcos"
-  resource_group_name = data.azurerm_resource_group.main.name
-  location            = var.az_location
-
-  os_disk {
-    os_type  = "Linux"
-    os_state = "Generalized"
-    blob_uri = azurerm_storage_blob.rhcos_image.url
-  }
-}
-
 # Bootstrap
+
+resource "random_string" "storage_suffix" {
+  length  = 5
+  upper   = false
+  special = false
+}
+
+resource "azurerm_storage_account" "ignition" {
+  name                     = "openshiftignition${random_string.storage_suffix.result}"
+  resource_group_name      = data.azurerm_resource_group.main.name
+  location                 = var.az_location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+}
+
+resource "azurerm_storage_container" "ignition" {
+  name                  = "ignition"
+  storage_account_name  = azurerm_storage_account.ignition.name
+  container_access_type = "private"
+}
 
 resource "azurerm_network_security_group" "bootstrap" {
   name = "openshift-${var.ocp_cluster_name}-bootstrap"
@@ -261,16 +234,8 @@ resource "azurerm_network_security_rule" "bootstrap-ssh" {
   direction = "Inbound"
 }
 
-resource "azurerm_availability_set" "bootstrap" {
-  name                = "openshift-${var.ocp_cluster_name}-bootstrap"
-  resource_group_name = data.azurerm_resource_group.main.name
-  location = var.az_location
-  managed = true
-  tags = {}
-}
-
 data "azurerm_storage_account_sas" "ignition" {
-  connection_string = azurerm_storage_account.cluster.primary_connection_string
+  connection_string = azurerm_storage_account.ignition.primary_connection_string
   https_only        = true
 
   resource_types {
@@ -303,9 +268,8 @@ data "azurerm_storage_account_sas" "ignition" {
 
 resource "azurerm_storage_blob" "ignition" {
   name                   = "bootstrap.ign"
-  resource_group_name = data.azurerm_resource_group.main.name
   source                 = "${var.ocp_ignition_dir}/bootstrap.ign"
-  storage_account_name   = azurerm_storage_account.cluster.name
+  storage_account_name   = azurerm_storage_account.ignition.name
   storage_container_name = azurerm_storage_container.ignition.name
   type                   = "block"
 }
@@ -334,18 +298,6 @@ resource "azurerm_network_interface_backend_address_pool_association" "bootstrap
   backend_address_pool_id = azurerm_lb_backend_address_pool.api-lb.id
 }
 
-//resource "azurerm_managed_disk" "bootstrap" {
-//  name = "openshift-${var.ocp_cluster_name}-bootstrap-disk"
-//  resource_group_name = data.azurerm_resource_group.main.name
-//  location = var.az_location
-//  storage_account_type = "Premium_LRS"
-//  create_option = "Import"
-//  source_uri = azurerm_storage_blob.rhcos_image.url
-////  create_option = "FromImage"
-////  image_reference_id = azurerm_image.cluster.id
-//  disk_size_gb = 100
-//  tags = {}
-//}
 
 resource "azurerm_virtual_machine" "bootstrap" {
   name = "openshift-${var.ocp_cluster_name}-bootstrap"
@@ -358,7 +310,7 @@ resource "azurerm_virtual_machine" "bootstrap" {
     disable_password_authentication = false
   }
   vm_size = var.ocp_bootstrap_vm_size
-  availability_set_id = azurerm_availability_set.bootstrap.id
+  availability_set_id = azurerm_availability_set.master.id
   delete_os_disk_on_termination = true
   delete_data_disks_on_termination = true
   os_profile {
@@ -377,7 +329,7 @@ resource "azurerm_virtual_machine" "bootstrap" {
 //    os_type = "Linux"
   }
   storage_image_reference {
-    id = azurerm_image.cluster.id
+    id = var.az_rhcos_image_id
   }
   tags = {}
 }
@@ -419,20 +371,6 @@ resource "azurerm_network_interface_backend_address_pool_association" "master" {
   backend_address_pool_id = azurerm_lb_backend_address_pool.api-lb.id
 }
 
-//resource "azurerm_managed_disk" "master" {
-//  count = var.ocp_master_replicas
-//  name = "openshift-${var.ocp_cluster_name}-master-${count.index}-disk"
-//  resource_group_name = data.azurerm_resource_group.main.name
-//  location = var.az_location
-//  storage_account_type = "Premium_LRS"
-//  create_option = "Import"
-//  source_uri = azurerm_storage_blob.rhcos_image.url
-////  create_option = "FromImage"
-////  image_reference_id = azurerm_image.cluster.id
-//  disk_size_gb = 200
-//  tags = {}
-//}
-
 resource "azurerm_virtual_machine" "master" {
   count = var.ocp_master_replicas
   name = "openshift-${var.ocp_cluster_name}-master-${count.index}"
@@ -464,7 +402,7 @@ resource "azurerm_virtual_machine" "master" {
 //    os_type = "Linux"
   }
   storage_image_reference {
-    id = azurerm_image.cluster.id
+    id = var.az_rhcos_image_id
   }
   tags = {}
 }
@@ -499,20 +437,6 @@ resource "azurerm_network_interface" "worker" {
   }
 }
 
-//resource "azurerm_managed_disk" "worker" {
-//  count = var.ocp_worker_replicas
-//  name = "openshift-${var.ocp_cluster_name}-worker-${count.index}-disk"
-//  resource_group_name = data.azurerm_resource_group.main.name
-//  location = var.az_location
-//  storage_account_type = "Premium_LRS"
-//  create_option = "Import"
-//  source_uri = azurerm_storage_blob.rhcos_image.url
-////  create_option = "FromImage"
-////  image_reference_id = azurerm_image.cluster.id
-//  disk_size_gb = 200
-//  tags = {}
-//}
-
 resource "azurerm_virtual_machine" "worker" {
   count = var.ocp_worker_replicas
   name = "openshift-${var.ocp_cluster_name}-worker-${count.index}"
@@ -543,11 +467,9 @@ resource "azurerm_virtual_machine" "worker" {
 //    managed_disk_id = element(azurerm_managed_disk.worker.*.id, count.index)
 //    os_type = "Linux"
   }
-
   storage_image_reference {
-    id = azurerm_image.cluster.id
+    id = var.az_rhcos_image_id
   }
-
   tags = {}
 }
 
