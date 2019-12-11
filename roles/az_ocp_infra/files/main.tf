@@ -103,6 +103,26 @@ resource "azurerm_lb_probe" "api-lb-https" {
   port = "6443"
 }
 
+resource "azurerm_lb_rule" "api-lb-machine-config" {
+  name = "openshift-${var.ocp_cluster_name}-api-lb-machine-config"
+  resource_group_name = data.azurerm_resource_group.main.name
+  loadbalancer_id = azurerm_lb.api-lb.id
+  frontend_ip_configuration_name = "openshift-${var.ocp_cluster_name}-api-lb-config"
+  protocol = "Tcp"
+  frontend_port = "22623"
+  backend_port = "22623"
+  backend_address_pool_id = azurerm_lb_backend_address_pool.api-lb.id
+  probe_id = azurerm_lb_probe.api-lb-machine-config.id
+}
+
+resource "azurerm_lb_probe" "api-lb-machine-config" {
+  name = "openshift-${var.ocp_cluster_name}-api-lb-machine-config"
+  resource_group_name = data.azurerm_resource_group.main.name
+  loadbalancer_id = azurerm_lb.api-lb.id
+  protocol = "Tcp"
+  port = "22623"
+}
+
 resource "azurerm_network_security_group" "ingress-lb" {
   name = "openshift-${var.ocp_cluster_name}-ingress-lb"
   resource_group_name = data.azurerm_resource_group.main.name
