@@ -2,7 +2,6 @@
 
 ocp_ignition_dir: /path/to/dir
 ocp_base_domain: example.com
-ocp_master_replicas: 3
 ocp_cluster_name: ocp42
 ocp_cluster_cidr: 10.128.0.0/14
 ocp_service_cidr: 172.30.0.0/16
@@ -33,7 +32,6 @@ az_rhcos_image_id: "/subscriptions/375cc3e0-7dec-46c4-9dbf-c5de503dcad4/resource
 #ocp_ignition_dir: /path/to/dir
 ocp_bootstrap_vm_size: Standard_D2s_v3
 ocp_master_vm_size: Standard_D2s_v3
-#ocp_master_replicas: 3
 ocp_worker_vm_size: Standard_D2s_v3
 ocp_worker_replicas: 2
 

@@ -50,11 +50,6 @@ variable "ocp_master_vm_size" {
   description = "Instnace size of master vms"
 }
 
-variable "ocp_master_replicas" {
-  description = "Number of master hosts to deploy. Must be either 1 or 3"
-
-}
-
 variable "ocp_worker_vm_size" {
     description = "Instnace size of worker vms"
 }

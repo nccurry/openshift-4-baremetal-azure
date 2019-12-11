@@ -321,6 +321,9 @@ resource "azurerm_network_interface_backend_address_pool_association" "bootstrap
 }
 
 resource "azurerm_virtual_machine" "bootstrap" {
+  depends_on = [
+    azurerm_storage_blob.ignition
+  ]
   name = "openshift-${var.ocp_cluster_name}-bootstrap"
   resource_group_name = data.azurerm_resource_group.main.name
   location = var.az_location
@@ -368,6 +371,21 @@ resource "azurerm_network_security_group" "master" {
   tags = {}
 }
 
+resource "azurerm_network_security_rule" "master-ssh" {
+  name = "openshift-${var.ocp_cluster_name}-master-ssh"
+  resource_group_name = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.master.name
+  description = "SSH traffic from external"
+  protocol = "Tcp"
+  source_port_range = "22"
+  destination_port_range = "22"
+  source_address_prefix = "*"
+  destination_address_prefix = "*"
+  access = "Allow"
+  priority = "100"
+  direction = "Inbound"
+}
+
 resource "azurerm_availability_set" "master" {
   name                = "openshift-${var.ocp_cluster_name}-master"
   resource_group_name = data.azurerm_resource_group.main.name
@@ -377,7 +395,7 @@ resource "azurerm_availability_set" "master" {
 }
 
 resource "azurerm_network_interface" "master" {
-  count = var.ocp_master_replicas
+  count = 3
   name = "openshift-${var.ocp_cluster_name}-master-nic-${count.index}"
   resource_group_name = data.azurerm_resource_group.main.name
   location = var.az_location
@@ -390,14 +408,17 @@ resource "azurerm_network_interface" "master" {
 }
 
 resource "azurerm_network_interface_backend_address_pool_association" "master" {
-  count = var.ocp_master_replicas
+  count = 3
   network_interface_id    = element(azurerm_network_interface.master.*.id, count.index)
   ip_configuration_name   = "openshift-${var.ocp_cluster_name}-master-nic-config"
   backend_address_pool_id = azurerm_lb_backend_address_pool.api-lb.id
 }
 
 resource "azurerm_virtual_machine" "master" {
-  count = var.ocp_master_replicas
+  depends_on = [
+    azurerm_virtual_machine.bootstrap
+  ]
+  count = 3
   name = "openshift-${var.ocp_cluster_name}-master-${count.index}"
   resource_group_name = data.azurerm_resource_group.main.name
   location = var.az_location
@@ -467,6 +488,9 @@ resource "azurerm_network_interface" "worker" {
 }
 
 resource "azurerm_virtual_machine" "worker" {
+  depends_on = [
+    azurerm_virtual_machine.master
+  ]
   count = var.ocp_worker_replicas
   name = "openshift-${var.ocp_cluster_name}-worker-${count.index}"
   resource_group_name = data.azurerm_resource_group.main.name
@@ -541,13 +565,15 @@ resource "azurerm_dns_a_record" "ingress" {
   tags = {}
 }
 
-resource "azurerm_dns_cname_record" "etcd" {
-  count = var.ocp_master_replicas
+resource "azurerm_dns_a_record" "etcd" {
+  count = 3
   name = "etcd-${count.index}.${var.ocp_cluster_name}"
   resource_group_name = var.az_resource_group_name
   zone_name = data.azurerm_dns_zone.main.name
   ttl = 300
-  record = azurerm_network_interface.master[count.index].internal_fqdn
+  records = [
+    element(azurerm_network_interface.master.*.private_ip_address, count.index)
+  ]
 }
 
 resource "azurerm_dns_srv_record" "etcd" {
@@ -558,7 +584,19 @@ resource "azurerm_dns_srv_record" "etcd" {
   record {
     port = 2380
     priority = 0
-    target = azurerm_dns_cname_record.etcd[0].name
+    target = element(azurerm_dns_a_record.etcd.*.fqdn, 0)
+    weight = 10
+  }
+  record {
+    port = 2380
+    priority = 0
+    target = element(azurerm_dns_a_record.etcd.*.fqdn, 1)
+    weight = 10
+  }
+    record {
+    port = 2380
+    priority = 0
+    target = element(azurerm_dns_a_record.etcd.*.fqdn, 2)
     weight = 10
   }
 }

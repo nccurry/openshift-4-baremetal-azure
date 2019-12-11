@@ -18,7 +18,6 @@
       ocp_ignition_dir: "{{ ocp_ignition_dir }}"
       ocp_bootstrap_vm_size: "{{ ocp_bootstrap_vm_size }}"
       ocp_master_vm_size: "{{ ocp_master_vm_size }}"
-      ocp_master_replicas: "{{ ocp_master_replicas }}"
       ocp_worker_vm_size: "{{ ocp_worker_vm_size }}"
       ocp_worker_replicas: "{{ ocp_worker_replicas }}"
     state: absent
