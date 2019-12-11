@@ -520,3 +520,25 @@ resource "azurerm_dns_a_record" "ingress" {
   ]
   tags = {}
 }
+
+resource "azurerm_dns_cname_record" "etcd" {
+  count = var.ocp_master_replicas
+  name = "etcd-${count.index}.${var.ocp_cluster_name}"
+  resource_group_name = var.az_resource_group_name
+  zone_name = data.azurerm_dns_zone.main.name
+  ttl = 300
+  record = azurerm_network_interface.master[count.index].internal_fqdn
+}
+
+resource "azurerm_dns_srv_record" "etcd" {
+  name = "_etcd-server-ssl._tcp.${var.ocp_cluster_name}"
+  resource_group_name = var.az_resource_group_name
+  zone_name = data.azurerm_dns_zone.main.name
+  ttl = 300
+  record {
+    port = 2380
+    priority = 0
+    target = azurerm_dns_cname_record.etcd[0].name
+    weight = 10
+  }
+}
