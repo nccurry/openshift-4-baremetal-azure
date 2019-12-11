@@ -1,0 +1,13 @@
+- name: Apply rhcos image terraform plan
+  terraform:
+    project_path: "{{ role_path }}/files"
+    backend_config:
+      path: "{{ role_path }}/../../.state/az_ocp_rhcos_image/terraform.tfstate"
+    force_init: true
+    variables:
+      az_resource_group_name: "{{ az_resource_group_name }}"
+      az_client_id: "{{ az_client_id }}"
+      az_subscription_id: "{{ az_subscription_id }}"
+      az_tenant_id: "{{ az_tenant_id }}"
+      az_location: "{{ az_location }}"
+      az_rhcos_image_url: "{{ az_rhcos_image_url }}"

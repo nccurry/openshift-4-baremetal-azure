@@ -12,6 +12,13 @@
     - never
     - ocp_ignition
 
+  - name: Deploy RHCOS image
+    import_role:
+      name: az_ocp_rhcos_image
+    tags:
+    - never
+    - az_ocp_rhcos_image
+
   - name: Deploy Azure infrastructure
     import_role:
       name: az_ocp_infra
