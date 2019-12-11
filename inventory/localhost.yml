@@ -1,3 +1,4 @@
+# This exists solely to remove the pesky "...only implicit localhost is available" error
 all:
   hosts:
     localhost:
