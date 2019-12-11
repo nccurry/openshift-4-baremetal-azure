@@ -190,6 +190,16 @@ resource "azurerm_lb_probe" "ingress-lb-http" {
   port = "80"
 }
 
+# Storage
+
+resource "azurerm_storage_account" "cluster" {
+  name                     = "openshiftignition${random_string.storage_suffix.result}"
+  resource_group_name      = data.azurerm_resource_group.main.name
+  location                 = var.az_location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+}
+
 # Bootstrap
 
 resource "random_string" "storage_suffix" {
@@ -198,17 +208,9 @@ resource "random_string" "storage_suffix" {
   special = false
 }
 
-resource "azurerm_storage_account" "ignition" {
-  name                     = "openshiftignition${random_string.storage_suffix.result}"
-  resource_group_name      = data.azurerm_resource_group.main.name
-  location                 = var.az_location
-  account_tier             = "Standard"
-  account_replication_type = "LRS"
-}
-
 resource "azurerm_storage_container" "ignition" {
   name                  = "ignition"
-  storage_account_name  = azurerm_storage_account.ignition.name
+  storage_account_name  = azurerm_storage_account.cluster.name
   container_access_type = "private"
 }
 
@@ -235,7 +237,7 @@ resource "azurerm_network_security_rule" "bootstrap-ssh" {
 }
 
 data "azurerm_storage_account_sas" "ignition" {
-  connection_string = azurerm_storage_account.ignition.primary_connection_string
+  connection_string = azurerm_storage_account.cluster.primary_connection_string
   https_only        = true
 
   resource_types {
@@ -269,7 +271,7 @@ data "azurerm_storage_account_sas" "ignition" {
 resource "azurerm_storage_blob" "ignition" {
   name                   = "bootstrap.ign"
   source                 = "${var.ocp_ignition_dir}/bootstrap.ign"
-  storage_account_name   = azurerm_storage_account.ignition.name
+  storage_account_name   = azurerm_storage_account.cluster.name
   storage_container_name = azurerm_storage_container.ignition.name
   type                   = "block"
 }
@@ -297,7 +299,6 @@ resource "azurerm_network_interface_backend_address_pool_association" "bootstrap
   ip_configuration_name   = "openshift-${var.ocp_cluster_name}-bootstrap-nic-config"
   backend_address_pool_id = azurerm_lb_backend_address_pool.api-lb.id
 }
-
 
 resource "azurerm_virtual_machine" "bootstrap" {
   name = "openshift-${var.ocp_cluster_name}-bootstrap"
@@ -330,6 +331,10 @@ resource "azurerm_virtual_machine" "bootstrap" {
   }
   storage_image_reference {
     id = var.az_rhcos_image_id
+  }
+  boot_diagnostics {
+    enabled     = true
+    storage_uri = azurerm_storage_account.cluster.primary_blob_endpoint
   }
   tags = {}
 }
@@ -404,6 +409,10 @@ resource "azurerm_virtual_machine" "master" {
   storage_image_reference {
     id = var.az_rhcos_image_id
   }
+  boot_diagnostics {
+    enabled     = true
+    storage_uri = azurerm_storage_account.cluster.primary_blob_endpoint
+  }
   tags = {}
 }
 
@@ -469,6 +478,10 @@ resource "azurerm_virtual_machine" "worker" {
   }
   storage_image_reference {
     id = var.az_rhcos_image_id
+  }
+  boot_diagnostics {
+    enabled     = true
+    storage_uri = azurerm_storage_account.cluster.primary_blob_endpoint
   }
   tags = {}
 }

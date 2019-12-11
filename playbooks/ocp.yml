@@ -1,6 +1,7 @@
 #!/usr/bin/env ansible-playbook
 ---
-- hosts: localhost
+- name: Deploy/Teardown OpenShift infrastructure
+  hosts: localhost
   become: false
   gather_facts: false
   tasks:
