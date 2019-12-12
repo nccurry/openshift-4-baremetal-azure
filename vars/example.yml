@@ -1,5 +1,9 @@
 # ocp_ignition
 
+az_client_id: d583frb1-42a2-4832-9c1e-75979z2ecfa5
+az_client_secret: 0aa81cc6-1c19-3068-a272-34d8901dcb86
+az_subscription_id: 3a5cc3e0-7dec-36c4-8dbf-c5de5f3dcad4
+az_tenant_id: 76d71da2-8a1f-413f-a7fe-da75dc11c82d
 ocp_ignition_dir: /path/to/dir
 ocp_base_domain: example.com
 ocp_cluster_name: ocp42
@@ -11,18 +15,20 @@ ocp_ssh_key: "ssh-rsa ..."
 # az_ocp_rhcos_image
 
 az_resource_group_name: resourcegroup
-az_client_id: d583f7b1-42a2-4862-9c1e-7587982ecfa5
-az_subscription_id: 375cc3e0-7dec-46c4-9dbf-c5de503dcad4
-az_tenant_id: 76d72da2-821f-413f-a7fe-da75ac11c82d
+#az_client_id: d583frb1-42a2-4832-9c1e-75979z2ecfa5
+#az_client_secret: 0aa81cc6-1c19-3068-a272-34d8901dcb86
+#az_subscription_id: 3a5cc3e0-7dec-36c4-8dbf-c5de5f3dcad4
+#az_tenant_id: 76d71da2-8a1f-413f-a7fe-da75dc11c82d
 az_location: eastus
 az_rhcos_image_url: https://rhcos.blob.core.windows.net/imagebucket/rhcos-42.80.20191002.0.vhd
 
 # az_ocp_infra
 
 #az_resource_group_name: resourcegroup
-#az_client_id: d583f7b1-42a2-4862-9c1e-7587982ecfa5
-#az_subscription_id: 375cc3e0-7dec-46c4-9dbf-c5de503dcad4
-#az_tenant_id: 76d72da2-821f-413f-a7fe-da75ac11c82d
+#az_client_id: d583frb1-42a2-4832-9c1e-75979z2ecfa5
+#az_client_secret: 0aa81cc6-1c19-3068-a272-34d8901dcb86
+#az_subscription_id: 3a5cc3e0-7dec-36c4-8dbf-c5de5f3dcad4
+#az_tenant_id: 76d71da2-8a1f-413f-a7fe-da75dc11c82d
 #az_location: eastus
 az_network_name: ocp4
 az_subnetwork_name: ocp4
@@ -30,8 +36,9 @@ az_dns_zone_name: example.com
 az_rhcos_image_id: "/subscriptions/375cc3e0-7dec-46c4-9dbf-c5de503dcad4/resourceGroups/resourcegroup/providers/Microsoft.Compute/images/openshift-rhcos"
 #ocp_cluster_name: ocp42
 #ocp_ignition_dir: /path/to/dir
-ocp_bootstrap_vm_size: Standard_D2s_v3
-ocp_master_vm_size: Standard_D2s_v3
-ocp_worker_vm_size: Standard_D2s_v3
-ocp_worker_replicas: 2
+ocp_bootstrap_vm_size: Standard_D4s_v3
+ocp_bootstrap_replicas: 1
+ocp_master_vm_size: Standard_D4s_v3
+ocp_worker_vm_size: Standard_D4s_v3
+ocp_worker_replicas: 3
 

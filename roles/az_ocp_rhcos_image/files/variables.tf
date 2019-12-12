@@ -6,6 +6,10 @@ variable "az_client_id" {
   description = "Id of service principal used to deploy resources"
 }
 
+variable "az_client_secret" {
+  description = "Id of service principal secret used to deploy resources"
+}
+
 variable "az_subscription_id" {
   description = " Id of azure subscription"
 }

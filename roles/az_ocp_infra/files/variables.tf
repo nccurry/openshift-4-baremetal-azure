@@ -6,6 +6,10 @@ variable "az_client_id" {
   description = "Id of service principal used to deploy resources"
 }
 
+variable "az_client_secret" {
+  description = "Id of service principal secret used to deploy resources"
+}
+
 variable "az_subscription_id" {
   description = " Id of azure subscription"
 }
@@ -44,6 +48,10 @@ variable "ocp_ignition_dir" {
 
 variable "ocp_bootstrap_vm_size" {
   description = "Instance size of bootstrap vm"
+}
+
+variable "ocp_bootstrap_replicas" {
+  description = "Number of bootstrap hosts to deploy. Should be 0 or 1"
 }
 
 variable "ocp_master_vm_size" {
