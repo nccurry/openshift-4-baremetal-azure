@@ -1,6 +1,6 @@
 #!/usr/bin/env ansible-playbook
 ---
-- name: Deploy/Teardown OpenShift infrastructure
+- name: "{{ teardown | default(false) | ternary('Teardown', 'Deploy') }} openshift infrastructure"
   hosts: localhost
   become: false
   gather_facts: false
@@ -12,14 +12,14 @@
     - never
     - ocp_ignition
 
-  - name: Deploy RHCOS image
+  - name: Deploy rhcos image
     import_role:
       name: az_ocp_rhcos_image
     tags:
     - never
     - az_ocp_rhcos_image
 
-  - name: Deploy Azure infrastructure
+  - name: Deploy azure infrastructure
     import_role:
       name: az_ocp_infra
     tags:

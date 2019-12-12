@@ -28,16 +28,12 @@ servicePrincipalId=$(echo ${servicePrincipal} | jq -r .appId)
 servicePrincipalPassword=$(echo ${servicePrincipal} | jq -r .password)
 ```
 
-## Set environment variables
+## Set environment variables 
+
+An example of the parameters required can be found at [vars/example.yml](vars/example.yml)
 
 ```shell script
-# Temporarily ignore shell history when command has leading space 
-HISTCONTROL=ignorespace
-
-# Store azure terraform provider variables
-# We don't want these accidentally laying around since they are sensitive
-# These get picked up automatically by the terraform azure provider
- export ARM_CLIENT_SECRET=<service principal secret>
+cp vars/example.yml vars/<environment>.yml
 ```
 
 ## Run ansible playbooks
@@ -45,9 +41,18 @@ HISTCONTROL=ignorespace
 ```shell script
 # Generate ignition files
  ./playbooks/ocp.yml -v -e '@vars/<environment>.yml' -t ocp_ignition
+# Delete ignition files
+ ./playbooks/ocp.yml -v -e '@vars/<environment>.yml' -t ocp_ignition -e teardown=true
 
-# Deploy OpenShift terraform template
+# Deploy RHCOS image
+ ./playbooks/ocp.yml -v -e '@vars/<environment>.yml' -t az_ocp_rhcos_image
+# Delete RHCOS image
+ ./playbooks/ocp.yml -v -e '@vars/<environment>.yml' -t az_ocp_rhcos_image -e teardown=true
+
+# Deploy OpenShift
  ./playbooks/ocp.yml -v -e '@vars/<environment>.yml' -t az_ocp_infra
+# Delete OpenShift 
+ ./playbooks/ocp.yml -v -e '@vars/<environment>.yml' -t az_ocp_infra -e teardown
 ```
 
 ## Miscellaneous

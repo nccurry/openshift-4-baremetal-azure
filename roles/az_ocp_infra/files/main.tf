@@ -4,6 +4,7 @@ terraform {
 
 provider "azurerm" {
   client_id = var.az_client_id
+  client_secret = var.az_client_secret
   subscription_id = var.az_subscription_id
   tenant_id = var.az_tenant_id
   skip_provider_registration = true
@@ -229,12 +230,14 @@ resource "random_string" "storage_suffix" {
 }
 
 resource "azurerm_storage_container" "ignition" {
+  count = var.ocp_bootstrap_replicas
   name                  = "ignition"
   storage_account_name  = azurerm_storage_account.cluster.name
   container_access_type = "private"
 }
 
 resource "azurerm_network_security_group" "bootstrap" {
+  count = var.ocp_bootstrap_replicas
   name = "openshift-${var.ocp_cluster_name}-bootstrap"
   resource_group_name = data.azurerm_resource_group.main.name
   location = var.az_location
@@ -242,6 +245,7 @@ resource "azurerm_network_security_group" "bootstrap" {
 }
 
 resource "azurerm_network_security_rule" "bootstrap-ssh" {
+  count = var.ocp_bootstrap_replicas
   name = "openshift-${var.ocp_cluster_name}-bootstrap-ssh"
   resource_group_name = data.azurerm_resource_group.main.name
   network_security_group_name = azurerm_network_security_group.bootstrap.name
@@ -257,6 +261,7 @@ resource "azurerm_network_security_rule" "bootstrap-ssh" {
 }
 
 data "azurerm_storage_account_sas" "ignition" {
+  count = var.ocp_bootstrap_replicas
   connection_string = azurerm_storage_account.cluster.primary_connection_string
   https_only        = true
 
@@ -289,6 +294,7 @@ data "azurerm_storage_account_sas" "ignition" {
 }
 
 resource "azurerm_storage_blob" "ignition" {
+  count = var.ocp_bootstrap_replicas
   name                   = "bootstrap.ign"
   source                 = "${var.ocp_ignition_dir}/bootstrap.ign"
   storage_account_name   = azurerm_storage_account.cluster.name
@@ -303,6 +309,7 @@ data "ignition_config" "bootstrap-redirect" {
 }
 
 resource "azurerm_network_interface" "bootstrap" {
+  count = var.ocp_bootstrap_replicas
   name = "openshift-${var.ocp_cluster_name}-bootstrap-nic"
   resource_group_name = data.azurerm_resource_group.main.name
   location = var.az_location
@@ -315,12 +322,14 @@ resource "azurerm_network_interface" "bootstrap" {
 }
 
 resource "azurerm_network_interface_backend_address_pool_association" "bootstrap" {
+  count = var.ocp_bootstrap_replicas
   network_interface_id    = azurerm_network_interface.bootstrap.id
   ip_configuration_name   = "openshift-${var.ocp_cluster_name}-bootstrap-nic-config"
   backend_address_pool_id = azurerm_lb_backend_address_pool.api-lb.id
 }
 
 resource "azurerm_virtual_machine" "bootstrap" {
+  count = var.ocp_bootstrap_replicas
   depends_on = [
     azurerm_storage_blob.ignition
   ]
@@ -485,6 +494,13 @@ resource "azurerm_network_interface" "worker" {
     subnet_id = data.azurerm_subnet.main.id
     private_ip_address_allocation = "Dynamic"
   }
+}
+
+resource "azurerm_network_interface_backend_address_pool_association" "worker" {
+  count = var.ocp_worker_replicas
+  network_interface_id    = element(azurerm_network_interface.worker.*.id, count.index)
+  ip_configuration_name   = "openshift-${var.ocp_cluster_name}-worker-nic-config"
+  backend_address_pool_id = azurerm_lb_backend_address_pool.ingress-lb.id
 }
 
 resource "azurerm_virtual_machine" "worker" {
