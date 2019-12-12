@@ -487,6 +487,13 @@ resource "azurerm_network_interface" "worker" {
   }
 }
 
+resource "azurerm_network_interface_backend_address_pool_association" "worker" {
+  count = var.ocp_worker_replicas
+  network_interface_id    = element(azurerm_network_interface.worker.*.id, count.index)
+  ip_configuration_name   = "openshift-${var.ocp_cluster_name}-worker-nic-config"
+  backend_address_pool_id = azurerm_lb_backend_address_pool.ingress-lb.id
+}
+
 resource "azurerm_virtual_machine" "worker" {
   depends_on = [
     azurerm_virtual_machine.master
