@@ -1,5 +1,6 @@
 .idea/
 *.tfvars
 .state/
-vars/test.yml
+vars/*
+!vars/example.yml
 .terraform/

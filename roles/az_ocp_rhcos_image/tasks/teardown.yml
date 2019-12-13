@@ -7,6 +7,7 @@
     variables:
       az_resource_group_name: "{{ az_resource_group_name }}"
       az_client_id: "{{ az_client_id }}"
+      az_client_secret: "{{ az_client_secret }}"
       az_subscription_id: "{{ az_subscription_id }}"
       az_tenant_id: "{{ az_tenant_id }}"
       az_location: "{{ az_location }}"

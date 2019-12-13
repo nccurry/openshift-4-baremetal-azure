@@ -58,6 +58,12 @@ cp vars/example.yml vars/<environment>.yml
 ## Miscellaneous
 
 ```shell script
+# Log in as service principal 
+servicePrincipalId=''
+servicePrincipalSecret=''
+tenant=''
+az login --service-principal -u ${servicePrincipalId} -p ${servicePrincipalSecret} --tenant ${tenantId}
+
 # List all azure regions
 az account list-locations -o table
 
