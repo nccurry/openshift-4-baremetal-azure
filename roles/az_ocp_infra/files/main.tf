@@ -1,5 +1,7 @@
 terraform {
-  backend "local" {}
+  backend "azurerm" {
+    key = "az_ocp_infra"
+  }
 }
 
 provider "azurerm" {
@@ -9,7 +11,7 @@ provider "azurerm" {
   tenant_id = var.az_tenant_id
   skip_provider_registration = true
   disable_terraform_partner_id = true
-  version = "~>1.38.0"
+  version = "~>1.39.0"
 }
 
 data azurerm_subnet "main" {

@@ -1,5 +1,12 @@
 terraform {
-  backend "local" {}
+  backend "azurerm" {
+    key = "az_ocp_rhcos_image"
+  }
+}
+
+locals {
+  # Get RHCOS filename from path to use for image name
+  rhcos_image_name = element(split("/", var.az_rhcos_image_url), length(split("/", var.az_rhcos_image_url)) - 1)
 }
 
 provider "azurerm" {
@@ -11,14 +18,13 @@ provider "azurerm" {
   # Need to comment out for version <1.34.0
   #disable_terraform_partner_id = true
   # Need to pin version due to bug https://github.com/terraform-providers/terraform-provider-azurerm/issues/4361
+  # Probably fixed in >1.40.0
   version = "<1.34.0"
 }
 
 data "azurerm_resource_group" "main" {
   name     = var.az_resource_group_name
 }
-
-# Storage
 
 resource "random_string" "storage_suffix" {
   length  = 5
@@ -33,8 +39,6 @@ resource "azurerm_storage_account" "rhcos" {
   account_tier             = "Standard"
   account_replication_type = "LRS"
 }
-
-# CoreOS Image
 
 resource "azurerm_storage_container" "vhd" {
   name                 = "vhd"
@@ -52,7 +56,7 @@ resource "azurerm_storage_blob" "rhcos_image" {
 }
 
 resource "azurerm_image" "rhcos" {
-  name                = "openshift-rhcos"
+  name                = local.rhcos_image_name
   resource_group_name = data.azurerm_resource_group.main.name
   location            = var.az_location
 

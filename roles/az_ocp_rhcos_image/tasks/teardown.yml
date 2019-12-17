@@ -2,7 +2,13 @@
   terraform:
     project_path: "{{ role_path }}/files"
     backend_config:
-      path: "{{ role_path }}/../../.state/az_ocp_rhcos_image/terraform.tfstate"
+      resource_group_name: "{{ tf_backend_resource_group_name }}"
+      storage_account_name: "{{ tf_backend_storage_account_name }}"
+      container_name: "{{ tf_backend_container_name }}"
+      client_id: "{{ tf_backend_client_id }}"
+      client_secret: "{{ tf_backend_client_secret }}"
+      subscription_id: "{{ tf_backend_subscription_id }}"
+      tenant_id: "{{ tf_backend_tenant_id }}"
     force_init: true
     variables:
       az_resource_group_name: "{{ az_resource_group_name }}"
