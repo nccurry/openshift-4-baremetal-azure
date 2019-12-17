@@ -12,3 +12,4 @@
       az_tenant_id: "{{ az_tenant_id }}"
       az_location: "{{ az_location }}"
       az_rhcos_image_url: "{{ az_rhcos_image_url }}"
+    workspace: "{{ az_resource_group_name }}"

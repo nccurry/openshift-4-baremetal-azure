@@ -26,12 +26,20 @@ variable "az_network_name" {
   description = "Name of network to deploy resources into"
 }
 
+variable "az_network_resource_group_name" {
+  description = "Name of resource group cluster network resides in"
+}
+
 variable "az_subnetwork_name" {
   description = "Name of subnetwork to deploy resources into"
 }
 
 variable "az_dns_zone_name" {
   description = "Name of DNS zone"
+}
+
+variable "az_dns_zone_resource_group_name" {
+  description = "Name of resource group dns zone resides in"
 }
 
 variable "az_rhcos_image_id" {

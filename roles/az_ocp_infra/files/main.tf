@@ -12,33 +12,24 @@ provider "azurerm" {
   version = "~>1.38.0"
 }
 
-data "azurerm_resource_group" "main" {
-  name     = var.az_resource_group_name
-}
-
 data azurerm_subnet "main" {
   name = var.az_subnetwork_name
   virtual_network_name = var.az_network_name
-  resource_group_name = var.az_resource_group_name
-}
-
-data "azurerm_dns_zone" "main" {
-  name                = var.az_dns_zone_name
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_network_resource_group_name
 }
 
 # Load Balancers
 
 resource "azurerm_network_security_group" "api-lb" {
   name = "openshift-${var.ocp_cluster_name}-api-lb"
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_resource_group_name
   location = var.az_location
   tags = {}
 }
 
 resource "azurerm_network_security_rule" "api-lb-api" {
     name = "openshift-${var.ocp_cluster_name}-api-lb-api"
-    resource_group_name = data.azurerm_resource_group.main.name
+    resource_group_name = var.az_resource_group_name
     network_security_group_name = azurerm_network_security_group.api-lb.name
     description = "API traffic from external"
     protocol = "Tcp"
@@ -53,7 +44,7 @@ resource "azurerm_network_security_rule" "api-lb-api" {
 
 resource "azurerm_network_security_rule" "api-lb-machine-config" {
     name = "openshift-${var.ocp_cluster_name}-api-lb-machine-config"
-    resource_group_name = data.azurerm_resource_group.main.name
+    resource_group_name = var.az_resource_group_name
     network_security_group_name = azurerm_network_security_group.api-lb.name
     description = "MachineConfig traffic from bootstrap / master"
     protocol = "Tcp"
@@ -68,7 +59,7 @@ resource "azurerm_network_security_rule" "api-lb-machine-config" {
 
 resource "azurerm_lb" "api-lb" {
   name = "openshift-${var.ocp_cluster_name}-api-lb"
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_resource_group_name
   location = var.az_location
   frontend_ip_configuration {
     name = "openshift-${var.ocp_cluster_name}-api-lb-config"
@@ -80,13 +71,13 @@ resource "azurerm_lb" "api-lb" {
 
 resource "azurerm_lb_backend_address_pool" "api-lb" {
   name = "openshift-${var.ocp_cluster_name}-api-lb"
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_resource_group_name
   loadbalancer_id     = azurerm_lb.api-lb.id
 }
 
 resource "azurerm_lb_rule" "api-lb-https" {
   name = "openshift-${var.ocp_cluster_name}-api-lb-https"
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_resource_group_name
   loadbalancer_id = azurerm_lb.api-lb.id
   frontend_ip_configuration_name = "openshift-${var.ocp_cluster_name}-api-lb-config"
   protocol = "Tcp"
@@ -98,7 +89,7 @@ resource "azurerm_lb_rule" "api-lb-https" {
 
 resource "azurerm_lb_probe" "api-lb-https" {
   name = "openshift-${var.ocp_cluster_name}-api-lb-https"
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_resource_group_name
   loadbalancer_id = azurerm_lb.api-lb.id
   protocol = "Tcp"
   port = "6443"
@@ -106,7 +97,7 @@ resource "azurerm_lb_probe" "api-lb-https" {
 
 resource "azurerm_lb_rule" "api-lb-machine-config" {
   name = "openshift-${var.ocp_cluster_name}-api-lb-machine-config"
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_resource_group_name
   loadbalancer_id = azurerm_lb.api-lb.id
   frontend_ip_configuration_name = "openshift-${var.ocp_cluster_name}-api-lb-config"
   protocol = "Tcp"
@@ -118,7 +109,7 @@ resource "azurerm_lb_rule" "api-lb-machine-config" {
 
 resource "azurerm_lb_probe" "api-lb-machine-config" {
   name = "openshift-${var.ocp_cluster_name}-api-lb-machine-config"
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_resource_group_name
   loadbalancer_id = azurerm_lb.api-lb.id
   protocol = "Tcp"
   port = "22623"
@@ -126,14 +117,14 @@ resource "azurerm_lb_probe" "api-lb-machine-config" {
 
 resource "azurerm_network_security_group" "ingress-lb" {
   name = "openshift-${var.ocp_cluster_name}-ingress-lb"
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_resource_group_name
   location = var.az_location
   tags = {}
 }
 
 resource "azurerm_network_security_rule" "ingress-lb-http" {
     name = "openshift-${var.ocp_cluster_name}-ingress-lb-http"
-    resource_group_name = data.azurerm_resource_group.main.name
+    resource_group_name = var.az_resource_group_name
     network_security_group_name = azurerm_network_security_group.ingress-lb.name
     description = "Ingress http from external"
     protocol = "Tcp"
@@ -148,7 +139,7 @@ resource "azurerm_network_security_rule" "ingress-lb-http" {
 
 resource "azurerm_network_security_rule" "ingress-lb-https" {
     name = "openshift-${var.ocp_cluster_name}-ingress-lb-https"
-    resource_group_name = data.azurerm_resource_group.main.name
+    resource_group_name = var.az_resource_group_name
     network_security_group_name = azurerm_network_security_group.ingress-lb.name
     description = "Ingress http from external"
     protocol = "Tcp"
@@ -163,7 +154,7 @@ resource "azurerm_network_security_rule" "ingress-lb-https" {
 
 resource "azurerm_lb" "ingress-lb" {
   name = "openshift-${var.ocp_cluster_name}-ingress-lb"
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_resource_group_name
   location = var.az_location
   frontend_ip_configuration {
     name = "openshift-${var.ocp_cluster_name}-ingress-lb-config"
@@ -175,13 +166,13 @@ resource "azurerm_lb" "ingress-lb" {
 
 resource "azurerm_lb_backend_address_pool" "ingress-lb" {
   name = "openshift-${var.ocp_cluster_name}-ingress-lb"
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_resource_group_name
   loadbalancer_id     = azurerm_lb.ingress-lb.id
 }
 
 resource "azurerm_lb_rule" "ingress-lb-https" {
   name = "openshift-${var.ocp_cluster_name}-ingress-lb-https"
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_resource_group_name
   loadbalancer_id = azurerm_lb.ingress-lb.id
   frontend_ip_configuration_name = "openshift-${var.ocp_cluster_name}-ingress-lb-config"
   protocol = "Tcp"
@@ -193,7 +184,7 @@ resource "azurerm_lb_rule" "ingress-lb-https" {
 
 resource "azurerm_lb_rule" "ingress-lb-http" {
   name = "openshift-${var.ocp_cluster_name}-ingress-lb-http"
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_resource_group_name
   loadbalancer_id = azurerm_lb.ingress-lb.id
   frontend_ip_configuration_name = "openshift-${var.ocp_cluster_name}-ingress-lb-config"
   protocol = "Tcp"
@@ -205,7 +196,7 @@ resource "azurerm_lb_rule" "ingress-lb-http" {
 
 resource "azurerm_lb_probe" "ingress-lb-http" {
   name = "openshift-${var.ocp_cluster_name}-ingress-lb-http"
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_resource_group_name
   loadbalancer_id = azurerm_lb.ingress-lb.id
   protocol = "Tcp"
   port = "80"
@@ -215,7 +206,7 @@ resource "azurerm_lb_probe" "ingress-lb-http" {
 
 resource "azurerm_storage_account" "cluster" {
   name                     = "openshiftignition${random_string.storage_suffix.result}"
-  resource_group_name      = data.azurerm_resource_group.main.name
+  resource_group_name      = var.az_resource_group_name
   location                 = var.az_location
   account_tier             = "Standard"
   account_replication_type = "LRS"
@@ -230,24 +221,21 @@ resource "random_string" "storage_suffix" {
 }
 
 resource "azurerm_storage_container" "ignition" {
-  count = var.ocp_bootstrap_replicas
   name                  = "ignition"
   storage_account_name  = azurerm_storage_account.cluster.name
   container_access_type = "private"
 }
 
 resource "azurerm_network_security_group" "bootstrap" {
-  count = var.ocp_bootstrap_replicas
   name = "openshift-${var.ocp_cluster_name}-bootstrap"
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_resource_group_name
   location = var.az_location
   tags = {}
 }
 
 resource "azurerm_network_security_rule" "bootstrap-ssh" {
-  count = var.ocp_bootstrap_replicas
   name = "openshift-${var.ocp_cluster_name}-bootstrap-ssh"
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_resource_group_name
   network_security_group_name = azurerm_network_security_group.bootstrap.name
   description = "SSH traffic from external"
   protocol = "Tcp"
@@ -261,7 +249,6 @@ resource "azurerm_network_security_rule" "bootstrap-ssh" {
 }
 
 data "azurerm_storage_account_sas" "ignition" {
-  count = var.ocp_bootstrap_replicas
   connection_string = azurerm_storage_account.cluster.primary_connection_string
   https_only        = true
 
@@ -294,7 +281,6 @@ data "azurerm_storage_account_sas" "ignition" {
 }
 
 resource "azurerm_storage_blob" "ignition" {
-  count = var.ocp_bootstrap_replicas
   name                   = "bootstrap.ign"
   source                 = "${var.ocp_ignition_dir}/bootstrap.ign"
   storage_account_name   = azurerm_storage_account.cluster.name
@@ -311,7 +297,7 @@ data "ignition_config" "bootstrap-redirect" {
 resource "azurerm_network_interface" "bootstrap" {
   count = var.ocp_bootstrap_replicas
   name = "openshift-${var.ocp_cluster_name}-bootstrap-nic"
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_resource_group_name
   location = var.az_location
   network_security_group_id = azurerm_network_security_group.bootstrap.id
   ip_configuration {
@@ -323,7 +309,7 @@ resource "azurerm_network_interface" "bootstrap" {
 
 resource "azurerm_network_interface_backend_address_pool_association" "bootstrap" {
   count = var.ocp_bootstrap_replicas
-  network_interface_id    = azurerm_network_interface.bootstrap.id
+  network_interface_id    = element(azurerm_network_interface.bootstrap.*.id, count.index)
   ip_configuration_name   = "openshift-${var.ocp_cluster_name}-bootstrap-nic-config"
   backend_address_pool_id = azurerm_lb_backend_address_pool.api-lb.id
 }
@@ -334,10 +320,10 @@ resource "azurerm_virtual_machine" "bootstrap" {
     azurerm_storage_blob.ignition
   ]
   name = "openshift-${var.ocp_cluster_name}-bootstrap"
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_resource_group_name
   location = var.az_location
   network_interface_ids = [
-    azurerm_network_interface.bootstrap.id
+    element(azurerm_network_interface.bootstrap.*.id, count.index)
   ]
   os_profile_linux_config {
     disable_password_authentication = false
@@ -358,8 +344,6 @@ resource "azurerm_virtual_machine" "bootstrap" {
     create_option     = "FromImage"
     managed_disk_type = "Premium_LRS"
     disk_size_gb      = 100
-//    managed_disk_id = azurerm_managed_disk.bootstrap.id
-//    os_type = "Linux"
   }
   storage_image_reference {
     id = var.az_rhcos_image_id
@@ -375,14 +359,14 @@ resource "azurerm_virtual_machine" "bootstrap" {
 
 resource "azurerm_network_security_group" "master" {
   name = "openshift-${var.ocp_cluster_name}-master"
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_resource_group_name
   location = var.az_location
   tags = {}
 }
 
 resource "azurerm_network_security_rule" "master-ssh" {
   name = "openshift-${var.ocp_cluster_name}-master-ssh"
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_resource_group_name
   network_security_group_name = azurerm_network_security_group.master.name
   description = "SSH traffic from external"
   protocol = "Tcp"
@@ -397,7 +381,7 @@ resource "azurerm_network_security_rule" "master-ssh" {
 
 resource "azurerm_availability_set" "master" {
   name                = "openshift-${var.ocp_cluster_name}-master"
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_resource_group_name
   location = var.az_location
   managed = true
   tags = {}
@@ -406,7 +390,7 @@ resource "azurerm_availability_set" "master" {
 resource "azurerm_network_interface" "master" {
   count = 3
   name = "openshift-${var.ocp_cluster_name}-master-nic-${count.index}"
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_resource_group_name
   location = var.az_location
   network_security_group_id = azurerm_network_security_group.master.id
   ip_configuration {
@@ -429,7 +413,7 @@ resource "azurerm_virtual_machine" "master" {
   ]
   count = 3
   name = "openshift-${var.ocp_cluster_name}-master-${count.index}"
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_resource_group_name
   location = var.az_location
   network_interface_ids = [
     element(azurerm_network_interface.master.*.id, count.index)
@@ -470,14 +454,14 @@ resource "azurerm_virtual_machine" "master" {
 
 resource "azurerm_network_security_group" "worker" {
   name = "openshift-${var.ocp_cluster_name}-worker"
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_resource_group_name
   location = var.az_location
   tags = {}
 }
 
 resource "azurerm_availability_set" "worker" {
   name                = "openshift-${var.ocp_cluster_name}-worker"
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_resource_group_name
   location = var.az_location
   managed = true
   tags = {}
@@ -486,7 +470,7 @@ resource "azurerm_availability_set" "worker" {
 resource "azurerm_network_interface" "worker" {
   count = var.ocp_worker_replicas
   name = "openshift-${var.ocp_cluster_name}-worker-nic-${count.index}"
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_resource_group_name
   location = var.az_location
   network_security_group_id = azurerm_network_security_group.worker.id
   ip_configuration {
@@ -509,7 +493,7 @@ resource "azurerm_virtual_machine" "worker" {
   ]
   count = var.ocp_worker_replicas
   name = "openshift-${var.ocp_cluster_name}-worker-${count.index}"
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = var.az_resource_group_name
   location = var.az_location
   network_interface_ids = [
     element(azurerm_network_interface.worker.*.id, count.index)
@@ -548,10 +532,10 @@ resource "azurerm_virtual_machine" "worker" {
 
 # DNS Entries
 
-resource "azurerm_dns_a_record" "api-public" {
+resource "azurerm_private_dns_a_record" "api-public" {
   name = "api.${var.ocp_cluster_name}"
-  resource_group_name = var.az_resource_group_name
-  zone_name = data.azurerm_dns_zone.main.name
+  resource_group_name = var.az_dns_zone_resource_group_name
+  zone_name = var.az_dns_zone_name
   ttl = 300
   records = [
     azurerm_lb.api-lb.private_ip_address
@@ -559,10 +543,10 @@ resource "azurerm_dns_a_record" "api-public" {
   tags = {}
 }
 
-resource "azurerm_dns_a_record" "api-private" {
+resource "azurerm_private_dns_a_record" "api-private" {
   name = "api-int.${var.ocp_cluster_name}"
-  resource_group_name = var.az_resource_group_name
-  zone_name = data.azurerm_dns_zone.main.name
+  resource_group_name = var.az_dns_zone_resource_group_name
+  zone_name = var.az_dns_zone_name
   ttl = 300
   records = [
     azurerm_lb.api-lb.private_ip_address
@@ -570,10 +554,10 @@ resource "azurerm_dns_a_record" "api-private" {
   tags = {}
 }
 
-resource "azurerm_dns_a_record" "ingress" {
+resource "azurerm_private_dns_a_record" "ingress" {
   name = "*.apps.${var.ocp_cluster_name}"
-  resource_group_name = var.az_resource_group_name
-  zone_name = data.azurerm_dns_zone.main.name
+  resource_group_name = var.az_dns_zone_resource_group_name
+  zone_name = var.az_dns_zone_name
   ttl = 300
   records = [
     azurerm_lb.ingress-lb.private_ip_address
@@ -581,38 +565,38 @@ resource "azurerm_dns_a_record" "ingress" {
   tags = {}
 }
 
-resource "azurerm_dns_a_record" "etcd" {
+resource "azurerm_private_dns_a_record" "etcd" {
   count = 3
   name = "etcd-${count.index}.${var.ocp_cluster_name}"
-  resource_group_name = var.az_resource_group_name
-  zone_name = data.azurerm_dns_zone.main.name
+  resource_group_name = var.az_dns_zone_resource_group_name
+  zone_name = var.az_dns_zone_name
   ttl = 300
   records = [
     element(azurerm_network_interface.master.*.private_ip_address, count.index)
   ]
 }
 
-resource "azurerm_dns_srv_record" "etcd" {
+resource "azurerm_private_dns_srv_record" "etcd" {
   name = "_etcd-server-ssl._tcp.${var.ocp_cluster_name}"
-  resource_group_name = var.az_resource_group_name
-  zone_name = data.azurerm_dns_zone.main.name
+  resource_group_name = var.az_dns_zone_resource_group_name
+  zone_name = var.az_dns_zone_name
   ttl = 300
   record {
     port = 2380
     priority = 0
-    target = element(azurerm_dns_a_record.etcd.*.fqdn, 0)
+    target = "etcd-0.${var.ocp_cluster_name}.${var.az_dns_zone_name}"
     weight = 10
   }
   record {
     port = 2380
     priority = 0
-    target = element(azurerm_dns_a_record.etcd.*.fqdn, 1)
+    target = "etcd-1.${var.ocp_cluster_name}.${var.az_dns_zone_name}"
     weight = 10
   }
     record {
     port = 2380
     priority = 0
-    target = element(azurerm_dns_a_record.etcd.*.fqdn, 2)
+    target = "etcd-2.${var.ocp_cluster_name}.${var.az_dns_zone_name}"
     weight = 10
   }
 }
