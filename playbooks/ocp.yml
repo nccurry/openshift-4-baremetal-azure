@@ -7,10 +7,10 @@
   tasks:
   - name: Generate ignition files
     import_role:
-      name: ocp_ignition
+      name: openshift_azure_storage_ignition
     tags:
     - never
-    - ocp_ignition
+    - openshift_azure_storage_ignition
 
   - name: Deploy rhcos image
     import_role:

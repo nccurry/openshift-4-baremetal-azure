@@ -31,5 +31,4 @@
       ocp_worker_vm_size: "{{ ocp_worker_vm_size }}"
       ocp_worker_replicas: "{{ ocp_worker_replicas }}"
     workspace: "{{ ocp_cluster_name }}"
-    purge_workspace: true
     state: absent

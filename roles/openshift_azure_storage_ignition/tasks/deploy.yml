@@ -1,0 +1,84 @@
+- name: Create ignition directory
+  file:
+    state: directory
+    path: "{{ ignition_directory }}"
+
+# In order to facilitate idempotency we check for files that exist along the way
+- name: Check ignition file status
+  stat:
+    path: "{{ item }}"
+  loop:
+  - "{{ ignition_directory }}/manifests/cluster-ingress-02-config.yml"
+  - "{{ ignition_directory }}/auth/kubeadmin-password"
+  register: file_status
+
+- name: Create install-config.yaml
+  template:
+    src: "{{ role_path }}/templates/install-config.yaml.j2"
+    dest: "{{ ignition_directory }}/install-config.yaml"
+  when: not (file_status.results[0].stat.exists or file_status.results[1].stat.exists)
+
+# This is needed because pods on masters aren't reachable by the ingress
+# It can likely be removed in future version (>4.2)
+# and we can generate ignition files directly
+# https://docs.openshift.com/container-platform/4.2/installing/installing_bare_metal/installing-bare-metal.html#installation-user-infra-generate-k8s-manifest-ignition_installing-bare-metal
+- block:
+  - name: Generate installation manifests
+    shell: "openshift-install
+            create manifests
+            --dir='{{ ignition_directory }}'"
+    args:
+      creates: "{{ ignition_directory }}/manifests/cluster-scheduler-02-config.yml"
+
+  - name: Set masters as unschedulable
+    lineinfile:
+      path: "{{ ignition_directory }}/manifests/cluster-scheduler-02-config.yml"
+      regexp: '^\s{2}mastersSchedulable:\strue$'
+      line: "  mastersSchedulable: false"
+
+  - name: Set ingress controller replica count
+    lineinfile:
+      path: "{{ ignition_directory }}/manifests/cluster-ingress-02-config.yml"
+      insertafter: '^\s{2}domain:\s.*$'
+      line: "  replicas: {{ openshift_worker_replicas }}"
+  when: not file_status.results[1].stat.exists
+
+- name: Generate ignition files
+  shell: "openshift-install
+          create ignition-configs
+          --dir='{{ ignition_directory }}'"
+  args:
+    creates: "{{ ignition_directory }}/bootstrap.ign"
+
+- name: Get/Update existing terraform modules
+  shell: "terraform get -update"
+  args:
+    chdir: "{{ role_path }}/files"
+  register: terraform_get
+  changed_when: '"Downloading" in terraform_get.stdout'
+
+- name: Apply terraform plan for cluster storage and ignition files
+  terraform:
+    project_path: "{{ role_path }}/files"
+    backend_config:
+      resource_group_name: "{{ azure_resource_group_name }}"
+      storage_account_name: "{{ backend_azure_storage_account_name }}"
+      container_name: "{{ backend_azure_container_name }}"
+      client_id: "{{ azure_client_id }}"
+      client_secret: "{{ azure_client_secret }}"
+      subscription_id: "{{ azure_subscription_id }}"
+      tenant_id: "{{ azure_tenant_id }}"
+    force_init: true
+    variables:
+      azure_client_id: "{{ azure_client_id }}"
+      azure_client_secret: "{{ azure_client_secret }}"
+      azure_subscription_id: "{{ azure_subscription_id }}"
+      azure_tenant_id: "{{ azure_tenant_id }}"
+      azure_resource_group_name: "{{ azure_resource_group_name }}"
+      azure_location: "{{ azure_location }}"
+      ignition_directory: "{{ ignition_directory }}"
+      openshift_cluster_name: "{{ openshift_cluster_name }}"
+    workspace: "{{ openshift_cluster_name }}"
+  register: terraform_ignition
+
+

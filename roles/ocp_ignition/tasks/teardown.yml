@@ -1,4 +1,0 @@
-- name: Delete ignition directory
-  file:
-    state: absent
-    path: "{{ ocp_ignition_dir }}"

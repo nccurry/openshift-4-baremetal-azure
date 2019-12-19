@@ -1,0 +1,28 @@
+- name: Delete ignition directory
+  file:
+    state: absent
+    path: "{{ ocp_ignition_dir }}"
+
+- name: Apply terraform plan for cluster storage and ignition files
+  terraform:
+    project_path: "{{ role_path }}/files"
+    backend_config:
+      resource_group_name: "{{ azure_resource_group_name }}"
+      storage_account_name: "{{ backend_azure_storage_account_name }}"
+      container_name: "{{ backend_azure_container_name }}"
+      client_id: "{{ azure_client_id }}"
+      client_secret: "{{ azure_client_secret }}"
+      subscription_id: "{{ azure_subscription_id }}"
+      tenant_id: "{{ azure_tenant_id }}"
+    force_init: true
+    variables:
+      azure_client_id: "{{ azure_client_id }}"
+      azure_client_secret: "{{ azure_client_secret }}"
+      azure_subscription_id: "{{ azure_subscription_id }}"
+      azure_tenant_id: "{{ azure_tenant_id }}"
+      azure_resource_group_name: "{{ azure_resource_group_name }}"
+      azure_location: "{{ azure_location }}"
+      ignition_directory: "{{ ignition_directory }}"
+      openshift_cluster_name: "{{ openshift_cluster_name }}"
+    workspace: "{{ openshift_cluster_name }}"
+    state: absent
