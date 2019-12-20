@@ -12,7 +12,7 @@ ocp_service_cidr: 172.30.0.0/16
 ocp_pull_secret: '<pull secret>'
 ocp_ssh_key: "ssh-rsa ..."
 
-# az_ocp_rhcos_image
+# openshift_azure_rhcos_image
 
 az_resource_group_name: resourcegroup
 #az_client_id: d583frb1-42a2-4832-9c1e-75979z2ecfa5
@@ -22,7 +22,7 @@ az_resource_group_name: resourcegroup
 az_location: eastus
 az_rhcos_image_url: https://rhcos.blob.core.windows.net/imagebucket/rhcos-42.80.20191002.0.vhd
 
-# az_ocp_infra
+# openshift_azure_cluster
 
 #az_resource_group_name: resourcegroup
 #az_client_id: d583frb1-42a2-4832-9c1e-75979z2ecfa5

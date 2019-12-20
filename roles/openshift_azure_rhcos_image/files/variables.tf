@@ -1,27 +1,27 @@
-variable "az_resource_group_name" {
+variable "azure_resource_group_name" {
   description = "Name of azure resource group to deploy resources into"
 }
 
-variable "az_client_id" {
+variable "azure_client_id" {
   description = "Id of service principal used to deploy resources"
 }
 
-variable "az_client_secret" {
+variable "azure_client_secret" {
   description = "Id of service principal secret used to deploy resources"
 }
 
-variable "az_subscription_id" {
+variable "azure_subscription_id" {
   description = " Id of azure subscription"
 }
 
-variable "az_tenant_id" {
+variable "azure_tenant_id" {
   description = "Id of azure tenant"
 }
 
-variable "az_location" {
+variable "azure_location" {
   description = "The region to deploy resources into"
 }
 
-variable "az_rhcos_image_url" {
+variable "rhcos_image_url" {
   description = "URL where RHCOS vhd image is hosted"
 }

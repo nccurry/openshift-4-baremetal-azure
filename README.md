@@ -40,19 +40,19 @@ cp vars/example.yml vars/<environment>.yml
 
 ```shell script
 # Generate ignition files
- ./playbooks/ocp.yml -v -e '@vars/<environment>.yml' -t openshift_azure_storage_ignition
+ ./playbooks/azure.yml -v -e '@vars/<environment>.yml' -t openshift_azure_storage_ignition
 # Delete ignition files
- ./playbooks/ocp.yml -v -e '@vars/<environment>.yml' -t openshift_azure_storage_ignition -e teardown=true
+ ./playbooks/azure.yml -v -e '@vars/<environment>.yml' -t openshift_azure_storage_ignition -e teardown=true
 
 # Deploy RHCOS image
- ./playbooks/ocp.yml -v -e '@vars/<environment>.yml' -t az_ocp_rhcos_image
+ ./playbooks/azure.yml -v -e '@vars/<environment>.yml' -t openshift_azure_rhcos_image
 # Delete RHCOS image
- ./playbooks/ocp.yml -v -e '@vars/<environment>.yml' -t az_ocp_rhcos_image -e teardown=true
+ ./playbooks/azure.yml -v -e '@vars/<environment>.yml' -t openshift_azure_rhcos_image -e teardown=true
 
 # Deploy OpenShift
- ./playbooks/ocp.yml -v -e '@vars/<environment>.yml' -t az_ocp_infra
+ ./playbooks/azure.yml -v -e '@vars/<environment>.yml' -t openshift_azure_cluster
 # Delete OpenShift 
- ./playbooks/ocp.yml -v -e '@vars/<environment>.yml' -t az_ocp_infra -e teardown
+ ./playbooks/azure.yml -v -e '@vars/<environment>.yml' -t openshift_azure_cluster -e teardown
 ```
 
 ## Miscellaneous
