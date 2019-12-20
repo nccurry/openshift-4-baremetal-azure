@@ -1,4 +1,4 @@
-- name: "Destroy openshift {{ openshift_cluster_name }} bootstrap host"
+- name: Apply openshift terraform plan
   terraform:
     project_path: "{{ role_path }}/files"
     backend_config:
@@ -17,6 +17,18 @@
       az_subscription_id: "{{ az_subscription_id }}"
       az_tenant_id: "{{ az_tenant_id }}"
       az_location: "{{ az_location }}"
-      az_rhcos_image_url: "{{ az_rhcos_image_url }}"
-    workspace: "{{ az_resource_group_name }}"
+      az_network_name: "{{ az_network_name }}"
+      az_network_resource_group_name: "{{ az_network_resource_group_name }}"
+      az_subnetwork_name: "{{ az_subnetwork_name }}"
+      az_dns_zone_name: "{{ az_dns_zone_name }}"
+      az_dns_zone_resource_group_name: "{{ az_dns_zone_resource_group_name }}"
+      az_rhcos_image_id: "{{ az_rhcos_image_id }}"
+      ocp_cluster_name: "{{ ocp_cluster_name }}"
+      ocp_ignition_dir: "{{ ocp_ignition_dir }}"
+      ocp_bootstrap_vm_size: "{{ ocp_bootstrap_vm_size }}"
+      ocp_bootstrap_replicas: "{{ ocp_bootstrap_replicas }}"
+      ocp_master_vm_size: "{{ ocp_master_vm_size }}"
+      ocp_worker_vm_size: "{{ ocp_worker_vm_size }}"
+      ocp_worker_replicas: "{{ ocp_worker_replicas }}"
+    workspace: "{{ ocp_cluster_name }}"
     state: absent

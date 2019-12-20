@@ -79,6 +79,12 @@
       ignition_directory: "{{ ignition_directory }}"
       openshift_cluster_name: "{{ openshift_cluster_name }}"
     workspace: "{{ openshift_cluster_name }}"
-  register: terraform_ignition
+  register: terraform_output
+
+- name: Store ignition source uris
+  set_fact:
+    bootstrap_ignition_source_uri: "{{ terraform_output.outputs.bootstrap_ignition_source_uri.value }}"
+    master_ignition_source_uri: "{{ terraform_output.outputs.master_ignition_source_uri.value }}"
+    worker_ignition_source_uri: "{{ terraform_output.outputs.master_ignition_source_uri.value }}"
 
 

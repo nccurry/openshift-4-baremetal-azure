@@ -71,5 +71,5 @@ variable "azure_dns_zone_resource_group_name" {
 }
 
 variable "azure_dns_zone_name" {
-  description = Private DNS zone for cluster dns records
+  description = "Private DNS zone for cluster dns records"
 }

@@ -1,21 +1,40 @@
-- name: Apply rhcos image terraform plan
+- name: Get/Update existing terraform modules
+  shell: "terraform get -update"
+  args:
+    chdir: "{{ role_path }}/files"
+  register: terraform_get
+  changed_when: '"Downloading" in terraform_get.stdout'
+
+- name: Apply openshift terraform plan
   terraform:
     project_path: "{{ role_path }}/files"
     backend_config:
-      resource_group_name: "{{ tf_backend_resource_group_name }}"
-      storage_account_name: "{{ tf_backend_storage_account_name }}"
-      container_name: "{{ tf_backend_container_name }}"
-      client_id: "{{ tf_backend_client_id }}"
-      client_secret: "{{ tf_backend_client_secret }}"
-      subscription_id: "{{ tf_backend_subscription_id }}"
-      tenant_id: "{{ tf_backend_tenant_id }}"
+      resource_group_name: "{{ azure_resource_group_name }}"
+      storage_account_name: "{{ backend_azure_storage_account_name }}"
+      container_name: "{{ backend_azure_container_name }}"
+      client_id: "{{ azure_client_id }}"
+      client_secret: "{{ azure_client_secret }}"
+      subscription_id: "{{ azure_subscription_id }}"
+      tenant_id: "{{ azure_tenant_id }}"
     force_init: true
     variables:
-      az_resource_group_name: "{{ az_resource_group_name }}"
-      az_client_id: "{{ az_client_id }}"
-      az_client_secret: "{{ az_client_secret }}"
-      az_subscription_id: "{{ az_subscription_id }}"
-      az_tenant_id: "{{ az_tenant_id }}"
-      az_location: "{{ az_location }}"
-      az_rhcos_image_url: "{{ az_rhcos_image_url }}"
-    workspace: "{{ az_resource_group_name }}"
+      azure_client_id: "{{ azure_client_id }}"
+      azure_client_secret: "{{ azure_client_secret }}"
+      azure_subscription_id: "{{ azure_subscription_id }}"
+      azure_tenant_id: "{{ azure_tenant_id }}"
+      openshift_cluster_name: "{{ openshift_cluster_name }}"
+      azure_resource_group_name: "{{ azure_resource_group_name }}"
+      azure_location: "{{ azure_location }}"
+      azure_subnetwork_id: "{{ azure_subnetwork_id }}"
+      azure_rhcos_image_id: "{{ azure_rhcos_image_id }}"
+      bootstrap_ignition_source_uri: "{{ bootstrap_ignition_source_uri }}"
+      bootstrap_replicas: "{{ bootstrap_replicas }}"
+      bootstrap_instance_size: "{{ bootstrap_instance_size }}"
+      master_ignition_source_uri: "{{ master_ignition_source_uri }}"
+      master_instance_size: "{{ master_instance_size }}"
+      worker_ignition_source_uri: "{{ worker_ignition_source_uri }}"
+      worker_replicas: "{{ worker_replicas }}"
+      worker_instance_size: "{{ worker_instance_size }}"
+      azure_dns_zone_resource_group_name: "{{ azure_dns_zone_resource_group_name }}"
+      azure_dns_zone_name: "{{ azure_dns_zone_name }}"
+    workspace: "{{ openshift_cluster_name }}"

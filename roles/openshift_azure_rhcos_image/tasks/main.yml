@@ -1,7 +1,7 @@
-- name: Deploy openshift
+- name: Deploy rhcos image
   import_tasks: deploy.yml
   when: not teardown | default(false)
 
-- name: Teardown openshift
+- name: Delete rhcos image
   import_tasks: teardown.yml
   when: teardown | default(false)
