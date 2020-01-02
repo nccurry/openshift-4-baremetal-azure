@@ -1,9 +1,16 @@
 - name: Delete ignition directory
   file:
     state: absent
-    path: "{{ ocp_ignition_dir }}"
+    path: "{{ ignition_directory }}"
 
-- name: Apply terraform plan for cluster storage and ignition files
+- name: Get/Update existing terraform modules
+  shell: "terraform get -update"
+  args:
+    chdir: "{{ role_path }}/files"
+  register: terraform_get
+  changed_when: '"Downloading" in terraform_get.stdout'
+
+- name: Destroy terraform plan for cluster storage and ignition files
   terraform:
     project_path: "{{ role_path }}/files"
     backend_config:
