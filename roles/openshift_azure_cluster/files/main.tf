@@ -31,4 +31,7 @@ module "openshift_azure_cluster" {
   worker_instance_size = var.worker_instance_size
   azure_dns_zone_resource_group_name = var.azure_dns_zone_resource_group_name
   azure_dns_zone_name = var.azure_dns_zone_name
+  tag_cost_center = var.tag_cost_center
+  tag_environment = var.tag_environment
+  tag_tier = var.tag_tier
 }

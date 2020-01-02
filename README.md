@@ -39,20 +39,18 @@ cp vars/example.yml vars/<environment>.yml
 ## Run ansible playbooks
 
 ```shell script
-# Generate ignition files
- ./playbooks/azure.yml -v -e '@vars/<environment>.yml' -t openshift_azure_storage_ignition
-# Delete ignition files
- ./playbooks/azure.yml -v -e '@vars/<environment>.yml' -t openshift_azure_storage_ignition -e teardown=true
-
 # Deploy RHCOS image
  ./playbooks/azure.yml -v -e '@vars/<environment>.yml' -t openshift_azure_rhcos_image
 # Delete RHCOS image
  ./playbooks/azure.yml -v -e '@vars/<environment>.yml' -t openshift_azure_rhcos_image -e teardown=true
 
 # Deploy OpenShift
- ./playbooks/azure.yml -v -e '@vars/<environment>.yml' -t openshift_azure_cluster
+ ./playbooks/azure.yml -v -e '@vars/<environment>.yml' -t openshift_azure_storage_ignition,openshift_azure_cluster
 # Delete OpenShift 
- ./playbooks/azure.yml -v -e '@vars/<environment>.yml' -t openshift_azure_cluster -e teardown
+ ./playbooks/azure.yml -v -e '@vars/<environment>.yml' -t openshift_azure_storage_ignition,openshift_azure_cluster -e teardown
+
+# Remove the bootstrap host - You could also modify the vars file and rerun instead of the -e bootstrap_replicas flag
+ ./playbooks/azure.yml -v -e '@vars/<environment>.yml' -t openshift_azure_storage_ignition,openshift_azure_cluster -e bootstrap_replicas=0
 ```
 
 ## Miscellaneous

@@ -30,5 +30,8 @@
       worker_instance_size: "{{ worker_instance_size }}"
       azure_dns_zone_resource_group_name: "{{ azure_dns_zone_resource_group_name }}"
       azure_dns_zone_name: "{{ azure_dns_zone_name }}"
+      tag_cost_center: "{{ tag_cost_center }}"
+      tag_environment: "{{ tag_environment }}"
+      tag_tier: "{{ tag_tier }}"
     workspace: "{{ openshift_cluster_name }}"
     state: absent

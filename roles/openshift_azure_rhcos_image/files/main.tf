@@ -22,4 +22,7 @@ module "openshift_azure_rhcos_image" {
   azure_resource_group_name = var.azure_resource_group_name
   azure_location = var.azure_location
   rhcos_image_url = var.rhcos_image_url
+  tag_cost_center = var.tag_cost_center
+  tag_environment = var.tag_environment
+  tag_tier = var.tag_tier
 }

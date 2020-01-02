@@ -78,6 +78,9 @@
       azure_location: "{{ azure_location }}"
       ignition_directory: "{{ ignition_directory }}"
       openshift_cluster_name: "{{ openshift_cluster_name }}"
+      tag_cost_center: "{{ tag_cost_center }}"
+      tag_environment: "{{ tag_environment }}"
+      tag_tier: "{{ tag_tier }}"
     workspace: "{{ openshift_cluster_name }}"
   register: terraform_output
 

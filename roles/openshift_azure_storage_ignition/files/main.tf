@@ -20,4 +20,7 @@ module "openshift_azure_storage_ignition" {
   azure_location = var.azure_location
   ignition_directory = var.ignition_directory
   openshift_cluster_name = var.openshift_cluster_name
+  tag_cost_center = var.tag_cost_center
+  tag_environment = var.tag_environment
+  tag_tier = var.tag_tier
 }

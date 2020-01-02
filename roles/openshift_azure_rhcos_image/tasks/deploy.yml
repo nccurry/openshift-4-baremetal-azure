@@ -18,4 +18,7 @@
       az_tenant_id: "{{ az_tenant_id }}"
       az_location: "{{ az_location }}"
       az_rhcos_image_url: "{{ az_rhcos_image_url }}"
+      tag_cost_center: "{{ tag_cost_center }}"
+      tag_environment: "{{ tag_environment }}"
+      tag_tier: "{{ tag_tier }}"
     workspace: "{{ az_resource_group_name }}"
