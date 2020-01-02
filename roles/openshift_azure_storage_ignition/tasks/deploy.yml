@@ -85,7 +85,7 @@
   set_fact:
     bootstrap_ignition_source_uri: "{{ terraform_output.outputs.bootstrap_ignition_source_uri.value }}"
     master_ignition_source_uri: "{{ terraform_output.outputs.master_ignition_source_uri.value }}"
-    worker_ignition_source_uri: "{{ terraform_output.outputs.master_ignition_source_uri.value }}"
+    worker_ignition_source_uri: "{{ terraform_output.outputs.worker_ignition_source_uri.value }}"
   no_log: true
 
 
